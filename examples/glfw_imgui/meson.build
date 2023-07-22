@@ -19,6 +19,8 @@ executable(
     'rectray_glfw_imgui',
     [
         'main.cpp',
+        'platform.cpp',
+        'scene.cpp',
     ],
     install: true,
     name_suffix: suffix,

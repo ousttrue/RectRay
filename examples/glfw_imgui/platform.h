@@ -1,1 +1,15 @@
 #pragma once
+#include <optional>
+#include <tuple>
+
+class Platform {
+  struct PlatformImpl *m_impl;
+
+public:
+  float clear_color[4] = {0.45f, 0.55f, 0.60f, 1.00f};
+  Platform();
+  ~Platform();
+  bool CreateWindow();
+  bool BeginFrame();
+  void EndFrame();
+};
