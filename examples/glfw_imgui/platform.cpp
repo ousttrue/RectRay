@@ -128,12 +128,15 @@ struct PlatformImpl {
     return true;
   }
 
-  bool BeginFrame(float clear_color[4]) {
+  bool BeginFrame() {
     if (glfwWindowShouldClose(Window)) {
       return {};
     }
     glfwPollEvents();
+    return true;
+  }
 
+  void UpdateGui(float clear_color[4]) {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -193,8 +196,6 @@ struct PlatformImpl {
         show_another_window = false;
       ImGui::End();
     }
-
-    return true;
   }
 
   void EndFrame() {
@@ -210,8 +211,8 @@ Platform::~Platform() { delete m_impl; }
 
 bool Platform::CreateWindow() { return m_impl->CreateWindow(); }
 
-bool Platform::BeginFrame() {
-  return m_impl->BeginFrame(clear_color);
-}
+bool Platform::BeginFrame() { return m_impl->BeginFrame(); }
+
+void Platform::UpdateGui() { m_impl->UpdateGui(clear_color); }
 
 void Platform::EndFrame() { m_impl->EndFrame(); }

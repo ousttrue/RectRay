@@ -8,7 +8,20 @@
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
 #endif
-static const char *vertex_shader_text = R"(#version 300 es
+static const char *vertex_shader_header = "#version 300 es\n";
+static const char *fragment_shader_header =
+    "#version 300 es\nprecision highp float;\n";
+
+#else
+#include <GL/glew.h>
+static const char *vertex_shader_header = "#version 150\n";
+static const char *fragment_shader_header = "#version 150\n";
+#endif
+
+static const char *vertex_shader_text[] = {
+    //
+    vertex_shader_header,
+    R"(
 uniform mat4 MVP;
 in vec3 vCol;
 in vec2 vPos;
@@ -18,42 +31,21 @@ void main()
     gl_Position = MVP * vec4(vPos, 0.0, 1.0);
     color = vCol;
 }
-)";
+)",
+};
 
-static const char *fragment_shader_text = R"(#version 300 es
-precision highp float;
+static const char *fragment_shader_text[] = {
+    //
+    fragment_shader_header,
+    R"(
 in vec3 color;
 out vec4 FragColor;
 void main()
 {
     FragColor = vec4(color, 1.0);
 }
-)";
-
-#else
-#include <GL/glew.h>
-static const char *vertex_shader_text =
-    R"(#version 110
-      uniform mat4 MVP;
-      attribute vec3 vCol;
-      attribute vec2 vPos;
-      varying vec3 color;
-      void main()
-      {
-          gl_Position = MVP * vec4(vPos, 0.0, 1.0);
-          color = vCol;
-      }
-      )";
-
-static const char *fragment_shader_text =
-    R"(#version 110
-      varying vec3 color;
-      void main()
-      {
-          gl_FragColor = vec4(color, 1.0);
-      }
-      )";
-#endif
+)",
+};
 
 void print_compile_error(const char *prefix, GLuint shader) {
   GLint compileSuccess = 0;
@@ -102,12 +94,14 @@ public:
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
+    glShaderSource(vertex_shader, std::size(vertex_shader_text),
+                   vertex_shader_text, NULL);
     glCompileShader(vertex_shader);
     print_compile_error("vs", vertex_shader);
 
     fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
+    glShaderSource(fragment_shader, std::size(fragment_shader_text),
+                   fragment_shader_text, NULL);
     glCompileShader(fragment_shader);
     print_compile_error("fs", fragment_shader);
 

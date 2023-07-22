@@ -5,7 +5,7 @@
 // This example can also compile and run with Emscripten! See
 // 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
-#include "../libs/emscripten/emscripten_mainloop_stub.h"
+#include "examples/libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
 // Main code
@@ -30,6 +30,8 @@ int main(int, char **) {
   while (platform.BeginFrame())
 #endif
   {
+    platform.UpdateGui();
+
     scene.Render(io.DisplaySize.x, io.DisplaySize.y, platform.clear_color);
 
     platform.EndFrame();

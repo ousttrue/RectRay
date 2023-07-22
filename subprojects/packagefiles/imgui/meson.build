@@ -14,7 +14,6 @@ args = [
 imgui_inc = include_directories(
     '.',
     'backends',
-    'examples/libs',
 )
 
 imgui_lib = static_library(

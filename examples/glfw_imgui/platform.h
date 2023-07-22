@@ -11,5 +11,6 @@ public:
   ~Platform();
   bool CreateWindow();
   bool BeginFrame();
+  void UpdateGui();
   void EndFrame();
 };

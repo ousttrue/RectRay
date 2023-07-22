@@ -3,10 +3,11 @@ imgui_dep = dependency('imgui')
 
 deps = [imgui_dep]
 args = []
+link_args = []
 
 compiler = meson.get_compiler('cpp')
 if compiler.get_id() == 'emscripten'
-    args += ['-sUSE_GLFW=3', '-sUSE_WEBGL2=1']
+    link_args += ['-sUSE_GLFW=3', '-sUSE_WEBGL2=1']
     suffix = 'html'
 else
     glfw_dep = dependency('glfw3')
@@ -25,6 +26,6 @@ executable(
     install: true,
     name_suffix: suffix,
     cpp_args: args,
-    link_args: args,
+    link_args: link_args,
     dependencies: deps,
 )
