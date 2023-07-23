@@ -1,11 +1,6 @@
 project('imgui', 'cpp')
 
-# glfw_dep = dependency('glfw3', default_options: ['default_library=static'])
-# freetype_dep = dependency('freetype')
-deps = [
-    # glfw_dep,
-    # freetype_dep,
-]
+deps = []
 args = [
     '-DIMGUI_USE_WCHAR32=1',
     '-DImDrawIdx=unsigned int',
@@ -15,6 +10,14 @@ imgui_inc = include_directories(
     '.',
     'backends',
 )
+
+compiler = meson.get_compiler('cpp')
+if compiler.get_id() == 'emscripten'
+    link_args += ['-sUSE_GLFW=3', '-sUSE_WEBGL2=1']
+else
+    glfw_dep = dependency('glfw3', default_options: ['install=true'])
+    deps += [glfw_dep]
+endif
 
 imgui_lib = static_library(
     'imgui',

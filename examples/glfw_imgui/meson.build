@@ -10,7 +10,7 @@ if compiler.get_id() == 'emscripten'
     link_args += ['-sUSE_GLFW=3', '-sUSE_WEBGL2=1']
     suffix = 'html'
 else
-    glfw_dep = dependency('glfw3')
+    glfw_dep = dependency('glfw3', default_options: ['install=true'])
     glew_dep = dependency('glew')
     deps += [glfw_dep, glew_dep]
     suffix = []
@@ -22,6 +22,7 @@ executable(
         'main.cpp',
         'platform.cpp',
         'scene.cpp',
+        'triangle.cpp',
     ],
     install: true,
     name_suffix: suffix,
