@@ -7,4 +7,5 @@ project(
     ],
 )
 
+subdir('src')
 subdir('examples/glfw_imgui')

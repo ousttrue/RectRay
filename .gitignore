@@ -3,5 +3,6 @@
 !/subprojects/imgui.wrap
 !/subprojects/glfw.wrap
 !/subprojects/glew.wrap
+!/subprojects/DirectXMath.wrap
 /prefix/
 imgui.ini

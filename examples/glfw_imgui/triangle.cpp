@@ -1,6 +1,7 @@
 #include "triangle.h"
 #include "gl_api.h"
 #include <assert.h>
+#include <rectray.h>
 
 struct TriangleImpl {
   std::shared_ptr<gl::ShaderProgram> m_shader;
@@ -61,15 +62,9 @@ void main()
     assert(glGetError() == GL_NO_ERROR);
   }
 
-  void Render() {
-    float mat4[16] = {
-        1, 0, 0, 0, //
-        0, 1, 0, 0, //
-        0, 0, 1, 0, //
-        0, 0, 0, 1, //
-    };
+  void Render(const DirectX::XMFLOAT4X4 &viewProjection) {
     m_shader->Use();
-    m_shader->SetMat4(m_mvp, mat4);
+    m_shader->SetMat4(m_mvp, &viewProjection._11);
     m_vao->Draw(3);
   }
 };
@@ -78,4 +73,6 @@ Triangle::Triangle() : m_impl(new TriangleImpl) {}
 
 Triangle::~Triangle() { delete m_impl; }
 
-void Triangle::Render() { m_impl->Render(); }
+void Triangle::Render(const rectray::Camera &camera) {
+  m_impl->Render(camera.ViewProjection());
+}

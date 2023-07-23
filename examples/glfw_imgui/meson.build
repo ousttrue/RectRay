@@ -1,7 +1,7 @@
 # build for emscripten: meson setup builddir_em --cross-file wasm.ini
 imgui_dep = dependency('imgui')
 
-deps = [imgui_dep]
+deps = [rectray_dep, imgui_dep]
 args = []
 link_args = []
 

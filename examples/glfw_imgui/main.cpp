@@ -1,6 +1,7 @@
 #include "platform.h"
 #include "scene.h"
 #include <imgui.h>
+#include <rectray.h>
 
 // This example can also compile and run with Emscripten! See
 // 'Makefile.emscripten' for details.
@@ -32,7 +33,20 @@ int main(int, char **) {
   {
     platform.UpdateGui();
 
-    scene.Render(io.DisplaySize.x, io.DisplaySize.y, platform.clear_color);
+    rectray::MouseState mouse{
+        .X = io.MousePos.x,
+        .Y = io.MousePos.y,
+    };
+    if (!io.WantCaptureMouse) {
+      mouse.DeltaX = io.MouseDelta.x;
+      mouse.DeltaY = io.MouseDelta.y;
+      mouse.LeftDown = io.MouseDown[0];
+      mouse.RightDown = io.MouseDown[1];
+      mouse.MiddleDown = io.MouseDown[2];
+      mouse.Wheel = io.MouseWheel;
+    }
+    scene.Render(io.DisplaySize.x, io.DisplaySize.y, platform.clear_color,
+                 mouse);
 
     platform.EndFrame();
   }

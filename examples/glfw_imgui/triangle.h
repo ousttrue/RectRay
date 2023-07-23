@@ -1,11 +1,14 @@
 #pragma once
 
-class Triangle
-{
+namespace rectray {
+struct Camera;
+}
+
+class Triangle {
   struct TriangleImpl *m_impl;
+
 public:
   Triangle();
   ~Triangle();
-  void Render();
+  void Render(const rectray::Camera &camera);
 };
-
