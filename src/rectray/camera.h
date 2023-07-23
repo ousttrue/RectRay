@@ -34,8 +34,57 @@ struct Projection {
 
   void Update(DirectX::XMFLOAT4X4 *projection) {
     auto aspectRatio = Viewport.AspectRatio();
-    DirectX::XMStoreFloat4x4(projection, DirectX::XMMatrixPerspectiveFovRH(
-                                             FovY, aspectRatio, NearZ, FarZ));
+    // DirectX::XMStoreFloat4x4(projection, DirectX::XMMatrixPerspectiveFovRH(
+    //                                          FovY, aspectRatio, NearZ,
+    //                                          FarZ));
+
+    float cot = 1 / tan(FovY * 0.5);
+    float a = aspectRatio;
+    float f = FarZ;
+    float n = NearZ;
+
+    // *projection = {
+    //     cot,
+    //     0,
+    //     0,
+    //     0,
+    //     //
+    //     0,
+    //     cot * a,
+    //     0,
+    //     0,
+    //     //
+    //     0,
+    //     0,
+    //     -(f + n) / (f - n),
+    //     -2 * f * n / (f - n),
+    //     //
+    //     0,
+    //     0,
+    //     -1,
+    //     0,
+    // };
+    *projection = {
+        cot,
+        0,
+        0,
+        0,
+        //
+        0,
+        cot * a,
+        0,
+        0,
+        //
+        0,
+        0,
+        -(f + n) / (f - n),
+        -1,
+        //
+        0,
+        0,
+        -2 * f * n / (f - n),
+        0,
+    };
   }
 
   void SetViewport(const struct Viewport &viewport) { Viewport = viewport; }

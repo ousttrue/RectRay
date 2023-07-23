@@ -65,7 +65,7 @@ void main()
   void Render(const DirectX::XMFLOAT4X4 &viewProjection) {
     m_shader->Use();
     m_shader->SetMat4(m_mvp, &viewProjection._11);
-    m_vao->Draw(3);
+    m_vao->Draw(GL_TRIANGLES, 3);
   }
 };
 

@@ -23,6 +23,7 @@ executable(
         'platform.cpp',
         'scene.cpp',
         'triangle.cpp',
+        'plane.cpp',
     ],
     install: true,
     name_suffix: suffix,
