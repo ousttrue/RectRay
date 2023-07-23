@@ -294,12 +294,9 @@ struct Camera {
     DirectX::XMStoreFloat4x4(&ViewMatrix, Transform.InversedMatrix());
   }
 
-  DirectX::XMFLOAT4X4 ViewProjection() const {
-    DirectX::XMFLOAT4X4 m;
-    DirectX::XMStoreFloat4x4(&m,
-                             DirectX::XMLoadFloat4x4(&ViewMatrix) *
-                                 DirectX::XMLoadFloat4x4(&ProjectionMatrix));
-    return m;
+  DirectX::XMMATRIX ViewProjection() const {
+    return DirectX::XMLoadFloat4x4(&ViewMatrix) *
+           DirectX::XMLoadFloat4x4(&ProjectionMatrix);
   }
 
   void Fit(const DirectX::XMFLOAT3 &min, const DirectX::XMFLOAT3 &max) {

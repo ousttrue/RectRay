@@ -99,9 +99,9 @@ void main() {
     gl_FragDepth = computeDepth(fragPos3D);
 
     float linearDepth = computeLinearDepth(fragPos3D);
-    float fading = max(0.0, (0.5 - linearDepth));
+    float fading = max(0.0, (0.7 - linearDepth));
 
-    outColor = (grid(fragPos3D, 10.0, true) + grid(fragPos3D, 1.0, true))* float(t > 0.0); // adding multiple resolution for the grid
+    outColor = (grid(fragPos3D, 0.1, true) + grid(fragPos3D, 1.0, true))* float(t > 0.0); // adding multiple resolution for the grid
     outColor.a *= fading;
 }
 )";

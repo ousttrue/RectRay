@@ -74,5 +74,7 @@ Triangle::Triangle() : m_impl(new TriangleImpl) {}
 Triangle::~Triangle() { delete m_impl; }
 
 void Triangle::Render(const rectray::Camera &camera) {
-  m_impl->Render(camera.ViewProjection());
+  DirectX::XMFLOAT4X4 m;
+  DirectX::XMStoreFloat4x4(&m, camera.ViewProjection());
+  m_impl->Render(m);
 }
