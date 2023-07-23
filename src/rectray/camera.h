@@ -43,27 +43,6 @@ struct Projection {
     float f = FarZ;
     float n = NearZ;
 
-    // *projection = {
-    //     cot,
-    //     0,
-    //     0,
-    //     0,
-    //     //
-    //     0,
-    //     cot * a,
-    //     0,
-    //     0,
-    //     //
-    //     0,
-    //     0,
-    //     -(f + n) / (f - n),
-    //     -2 * f * n / (f - n),
-    //     //
-    //     0,
-    //     0,
-    //     -1,
-    //     0,
-    // };
     *projection = {
         cot,
         0,
