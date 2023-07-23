@@ -18,6 +18,7 @@
 #define glBindVertexArray glBindVertexArrayOES
 #define glGenVertexArrays glGenVertexArraysOES
 #define glDeleteVertexArrays glDeleteVertexArraysOES
+#include <GLES3/gl3.h>
 inline const char *SHADER_HEADER = "#version 300 es\nprecision highp float;\n";
 
 #else

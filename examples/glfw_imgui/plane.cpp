@@ -66,8 +66,8 @@ vec4 grid(vec3 fragPos3D, float scale, bool drawAxis) {
     vec2 derivative = fwidth(coord);
     vec2 grid = abs(fract(coord - 0.5) - 0.5) / derivative;
     float line = min(grid.x, grid.y);
-    float minimumz = min(derivative.y, 1);
-    float minimumx = min(derivative.x, 1);
+    float minimumz = min(derivative.y, 1.0);
+    float minimumx = min(derivative.x, 1.0);
     vec4 color = line_color;
     color.a-=min(line, 1.0);
     // z axis
@@ -99,9 +99,9 @@ void main() {
     gl_FragDepth = computeDepth(fragPos3D);
 
     float linearDepth = computeLinearDepth(fragPos3D);
-    float fading = max(0, (0.5 - linearDepth));
+    float fading = max(0.0, (0.5 - linearDepth));
 
-    outColor = (grid(fragPos3D, 10, true) + grid(fragPos3D, 1, true))* float(t > 0); // adding multiple resolution for the grid
+    outColor = (grid(fragPos3D, 10.0, true) + grid(fragPos3D, 1.0, true))* float(t > 0.0); // adding multiple resolution for the grid
     outColor.a *= fading;
 }
 )";
@@ -114,7 +114,7 @@ struct PlaneImpl {
   struct ViewUniforms {
     DirectX::XMFLOAT4X4 view;
     DirectX::XMFLOAT4X4 proj;
-    DirectX::XMFLOAT3 pos;
+    DirectX::XMFLOAT4 pos;
   };
   ViewUniforms m_ubo_data;
 
