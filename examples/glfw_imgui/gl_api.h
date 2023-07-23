@@ -12,6 +12,11 @@
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
 #endif
+#define GL_GLEXT_PROTOTYPES
+#include <GLES2/gl2ext.h>
+#define glBindVertexArray       glBindVertexArrayOES
+#define glGenVertexArrays       glGenVertexArraysOES
+#define glDeleteVertexArrays    glDeleteVertexArraysOES
 inline const char *SHADER_HEADER = "#version 300 es\nprecision highp float;\n";
 
 #else

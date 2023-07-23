@@ -1,5 +1,10 @@
 #pragma once
+
+#ifdef __EMSCRIPTEN__
+#define _XM_NO_INTRINSICS_
+#endif
 #include <DirectXMath.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
