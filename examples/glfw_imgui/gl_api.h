@@ -1,4 +1,5 @@
 #pragma once
+#include <assert.h>
 #include <expected>
 #include <iterator>
 #include <memory>
@@ -347,6 +348,257 @@ struct Ubo {
   void SetBindingPoint(uint32_t binding_point) {
     glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, ubo_);
   }
+};
+
+enum class PixelFormat {
+  u8_RGBA,
+  u8_RGB,
+  // grayscale
+  u8_R,
+  f16_RGB,
+  f32_RGB,
+};
+
+enum class ColorSpace {
+  Linear,
+  sRGB,
+};
+
+inline std::optional<uint32_t> GLImageFormat(PixelFormat format,
+                                             ColorSpace colorspace) {
+  if (colorspace == ColorSpace::Linear) {
+    switch (format) {
+    case PixelFormat::f32_RGB:
+      return GL_RGB32F;
+    case PixelFormat::f16_RGB:
+      return GL_RGB16F;
+    case PixelFormat::u8_RGBA:
+      return GL_RGBA;
+    case PixelFormat::u8_RGB:
+      return GL_RGB;
+    case PixelFormat::u8_R:
+      return GL_RED;
+    default:
+      break;
+    }
+  } else {
+    switch (format) {
+    case PixelFormat::u8_RGBA:
+      return GL_SRGB8_ALPHA8;
+    case PixelFormat::u8_RGB:
+      return GL_SRGB8;
+    default:
+      break;
+    }
+  }
+
+  assert(false);
+  return std::nullopt;
+}
+
+inline uint32_t GLInternalFormat(PixelFormat format) {
+  switch (format) {
+  case PixelFormat::u8_RGBA:
+    return GL_RGBA;
+
+  case PixelFormat::u8_R:
+    return GL_RED;
+
+  default:
+    break;
+  }
+  return GL_RGB;
+}
+
+struct Image {
+  int Width;
+  int Height;
+  PixelFormat Format;
+  ColorSpace ColorSpace = ColorSpace::Linear;
+  const uint8_t *Pixels = nullptr;
+};
+
+class Texture {
+  uint32_t m_handle;
+  int m_width = 0;
+  int m_height = 0;
+
+public:
+  Texture() { glGenTextures(1, &m_handle); }
+  ~Texture() { glDeleteTextures(1, &m_handle); }
+  void Bind() const { glBindTexture(GL_TEXTURE_2D, m_handle); }
+  void Unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
+  void Activate(uint32_t unit) const {
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_2D, m_handle);
+  }
+  static void Deactivate(uint32_t unit) { glDisable(GL_TEXTURE0 + unit); }
+  const uint32_t &Handle() const { return m_handle; }
+  int Width() const { return m_width; }
+  int Height() const { return m_height; }
+
+  static std::shared_ptr<Texture> Create(const Image &data,
+                                         bool useFloat = false) {
+    auto ptr = std::shared_ptr<Texture>(new Texture());
+    ptr->Upload(data, useFloat);
+    return ptr;
+  }
+
+  void Upload(const Image &data, bool useFloat) {
+    SamplingLinear();
+    WrapClamp();
+    Bind();
+    if (auto format = GLImageFormat(data.Format, data.ColorSpace)) {
+      glTexImage2D(GL_TEXTURE_2D, 0, *format, data.Width, data.Height, 0,
+                   GLInternalFormat(data.Format),
+                   useFloat ? GL_FLOAT : GL_UNSIGNED_BYTE, data.Pixels);
+      glGenerateMipmap(GL_TEXTURE_2D);
+      glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &m_width);
+      glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &m_height);
+    }
+    Unbind();
+  }
+
+  void WrapClamp() {
+    Bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    Unbind();
+  }
+
+  void WrapRepeat() {
+    Bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    Unbind();
+  }
+
+  void SamplingPoint() {
+    Bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    Unbind();
+  }
+
+  void SamplingLinear(bool mip = false) {
+    Bind();
+    if (mip) {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                      GL_LINEAR_MIPMAP_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+    Unbind();
+  }
+};
+
+struct ClearParam {
+  bool Depth = true;
+  bool ApplyAlpha = false;
+};
+
+inline void ClearViewport(int width, int height, const float clear_color[4],
+                          std::optional<float> depth = {},
+                          bool apply_alpha = false) {
+  glViewport(0, 0, width, height);
+  glScissor(0, 0, width, height);
+  if (apply_alpha) {
+    glClearColor(clear_color[0] * clear_color[3],
+                 clear_color[1] * clear_color[3],
+                 clear_color[2] * clear_color[3], clear_color[3]);
+  } else {
+    glClearColor(clear_color[0], clear_color[1], clear_color[2],
+                 clear_color[3]);
+  }
+  if (depth) {
+    glClearDepth(*depth);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  } else {
+    glClear(GL_COLOR_BUFFER_BIT);
+  }
+}
+
+struct Fbo {
+  uint32_t m_fbo = 0;
+  uint32_t m_rbo = 0;
+  Fbo() { glGenFramebuffers(1, &m_fbo); }
+  ~Fbo() {
+    glDeleteFramebuffers(1, &m_fbo);
+    if (m_rbo) {
+      glDeleteRenderbuffers(1, &m_rbo);
+    }
+  }
+  Fbo(const Fbo &) = delete;
+  Fbo &operator=(const Fbo &) = delete;
+
+  void Bind() { glBindFramebuffer(GL_FRAMEBUFFER, m_fbo); }
+  void Unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+
+  void AttachDepth(int width, int height) {
+    Bind();
+    if (!m_rbo) {
+      glGenRenderbuffers(1, &m_rbo);
+    }
+    glBindRenderbuffer(GL_RENDERBUFFER, m_rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                              GL_RENDERBUFFER, m_rbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
+
+  void AttachTexture2D(uint32_t texture, int mipLevel = 0) {
+    Bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           texture, mipLevel);
+    // uint32_t buffers[] = { GL_COLOR_ATTACHMENT0 };
+    // glDrawBuffers(1, buffers);
+  }
+
+  void AttachCubeMap(int i, uint32_t texture, int mipLevel = 0) {
+    Bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, texture,
+                           mipLevel);
+  }
+};
+
+struct RenderTarget {
+  std::shared_ptr<Fbo> Fbo;
+  std::shared_ptr<Texture> FboTexture;
+
+  uint32_t Begin(float width, float height, const float color[4]) {
+    if (width == 0 || height == 0) {
+      return 0;
+    }
+    if (!Fbo) {
+      Fbo = std::make_shared<struct Fbo>();
+    }
+
+    if (FboTexture) {
+      if (FboTexture->Width() != width || FboTexture->Height() != height) {
+        FboTexture = nullptr;
+      }
+    }
+    if (!FboTexture) {
+      FboTexture = Texture::Create({
+          static_cast<int>(width),
+          static_cast<int>(height),
+          PixelFormat::u8_RGB,
+          ColorSpace::Linear,
+      });
+      Fbo->AttachTexture2D(FboTexture->Handle());
+      Fbo->AttachDepth(static_cast<int>(width), static_cast<int>(height));
+    }
+
+    Fbo->Bind();
+    ClearViewport(width, height, color, 1.0f);
+
+    return FboTexture->Handle();
+  }
+
+  void End() { Fbo->Unbind(); }
 };
 
 } // namespace gl
