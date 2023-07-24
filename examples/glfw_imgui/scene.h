@@ -1,8 +1,9 @@
 #pragma once
 
 namespace rectray {
-struct MouseState;
-}
+struct WindowMouseState;
+struct Camera;
+} // namespace rectray
 
 class Scene {
   struct SceneImpl *m_impl;
@@ -10,6 +11,8 @@ class Scene {
 public:
   Scene();
   ~Scene();
-  void Render(float width, float height, const float clear_color[4],
-              const rectray::MouseState &mouse);
+  void Render(float width, float height, rectray::Camera &camera,
+              const rectray::WindowMouseState &mouse,
+              struct ImDrawList *ImDrawList,
+              rectray::Camera *otherCamera = nullptr);
 };

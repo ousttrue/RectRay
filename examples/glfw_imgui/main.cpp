@@ -12,6 +12,11 @@
 #include "examples/libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
+struct CameraState {
+  rectray::Camera Camera;
+  float ClearColor[4];
+};
+
 // Main code
 int main(int, char **) {
   Platform platform;
@@ -19,11 +24,26 @@ int main(int, char **) {
   if (!platform.CreateWindow()) {
     return 1;
   }
-
-  Scene scene;
   auto &io = ImGui::GetIO();
 
-  auto main = std::make_shared<gl::RenderTarget>();
+  Scene scene;
+  CameraState mainCamera{
+      .Camera{
+          .Transform{
+              .Translation{0, 0, 3},
+          },
+      },
+      .ClearColor{0.1f, 0.2f, 0.1f, 1.0f},
+  };
+  CameraState debugCamera{
+      .Camera{
+          .Transform{
+              .Translation{0, 0, 3},
+          },
+      },
+      .ClearColor{0.3f, 0.3f, 0.3f, 1.0f},
+  };
+  auto renderTarget = std::make_shared<gl::RenderTarget>();
 
   // Main loop
 #ifdef __EMSCRIPTEN__
@@ -36,15 +56,18 @@ int main(int, char **) {
   while (platform.BeginFrame())
 #endif
   {
-    platform.UpdateGui();
+    platform.UpdateGui(mainCamera.ClearColor);
 
-    if (ImGui::Begin("main")) {
+    //
+    // render to renderTarget
+    //
+    if (ImGui::Begin("debug")) {
       auto pos = ImGui::GetCursorScreenPos();
       auto size = ImGui::GetContentRegionAvail();
 
-      // image button. capture mouse event
-      if (auto texture = main->Begin(size.x, size.y, platform.clear_color)) {
-        ImGui::ImageButton((void *)texture, size, {0, 1}, {1, 0}, 0,
+      if (auto texture =
+              renderTarget->Begin(size.x, size.y, debugCamera.ClearColor)) {
+        ImGui::ImageButton((void *)(int64_t)texture, size, {0, 1}, {1, 0}, 0,
                            {1, 1, 1, 1}, {1, 1, 1, 1});
         ImGui::ButtonBehavior(ImGui::GetCurrentContext()->LastItemData.Rect,
                               ImGui::GetCurrentContext()->LastItemData.ID,
@@ -54,33 +77,67 @@ int main(int, char **) {
         auto active = ImGui::IsItemActive();
         auto hover = ImGui::IsItemHovered();
 
-        main->End();
+        rectray::WindowMouseState state{
+            .ViewportX = pos.x,
+            .ViewportY = pos.y,
+            .ViewportWidth = size.x,
+            .ViewportHeight = size.y,
+            .MouseX = io.MousePos.x,
+            .MouseY = io.MousePos.y,
+        };
+        if (active) {
+          state.MouseDeltaX = io.MouseDelta.x;
+          state.MouseDeltaY = io.MouseDelta.y;
+          state.MouseLeftDown = io.MouseDown[0];
+          state.MouseRightDown = io.MouseDown[1];
+          state.MouseMiddleDown = io.MouseDown[2];
+        }
+        if (hover) {
+          state.MouseWheel = io.MouseWheel;
+        }
+
+        scene.Render(io.DisplaySize.x, io.DisplaySize.y, debugCamera.Camera,
+                     state, ImGui::GetWindowDrawList(), &mainCamera.Camera);
+
+        renderTarget->End();
       }
     }
     ImGui::End();
 
-    if (ImGui::Begin("debug")) {
-      auto pos = ImGui::GetCursorScreenPos();
-      auto size = ImGui::GetContentRegionAvail();
-      ImGui::TextUnformatted("debug");
-    }
-    ImGui::End();
+    //
+    // render to background
+    //
+    {
+      rectray::WindowMouseState state{
+          .ViewportX = 0,
+          .ViewportY = 0,
+          .ViewportWidth = io.DisplaySize.x,
+          .ViewportHeight = io.DisplaySize.y,
+          .MouseX = io.MousePos.x,
+          .MouseY = io.MousePos.y,
+      };
+      if (!io.WantCaptureMouse) {
+        state.MouseDeltaX = io.MouseDelta.x;
+        state.MouseDeltaY = io.MouseDelta.y;
+        state.MouseLeftDown = io.MouseDown[0];
+        state.MouseRightDown = io.MouseDown[1];
+        state.MouseMiddleDown = io.MouseDown[2];
+        state.MouseWheel = io.MouseWheel;
+      }
 
-    rectray::MouseState mouse{
-        .X = io.MousePos.x,
-        .Y = io.MousePos.y,
-    };
-    if (!io.WantCaptureMouse) {
-      mouse.DeltaX = io.MouseDelta.x;
-      mouse.DeltaY = io.MouseDelta.y;
-      mouse.LeftDown = io.MouseDown[0];
-      mouse.RightDown = io.MouseDown[1];
-      mouse.MiddleDown = io.MouseDown[2];
-      mouse.Wheel = io.MouseWheel;
-    }
+      glEnable(GL_DEPTH_TEST);
+      // glDepthFunc(GL_ALWAYS);
+      glDepthFunc(GL_LEQUAL);
+      glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+      glClearColor(mainCamera.ClearColor[0] * mainCamera.ClearColor[3],
+                   mainCamera.ClearColor[1] * mainCamera.ClearColor[3],
+                   mainCamera.ClearColor[2] * mainCamera.ClearColor[3],
+                   mainCamera.ClearColor[3]);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    scene.Render(io.DisplaySize.x, io.DisplaySize.y, platform.clear_color,
-                 mouse);
+      scene.Render(io.DisplaySize.x, io.DisplaySize.y, mainCamera.Camera, state,
+                   ImGui::GetBackgroundDrawList());
+    }
 
     platform.EndFrame();
   }

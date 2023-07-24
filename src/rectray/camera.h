@@ -148,15 +148,35 @@ struct EuclideanTransform {
   }
 };
 
-struct MouseState {
-  float X;
-  float Y;
-  float DeltaX = 0;
-  float DeltaY = 0;
-  bool LeftDown = false;
-  bool MiddleDown = false;
-  bool RightDown = false;
-  float Wheel = 0;
+struct WindowMouseState {
+  float ViewportX;
+  float ViewportY;
+  float ViewportWidth;
+  float ViewportHeight;
+  float MouseX;
+  float MouseY;
+  float MouseDeltaX = 0;
+  float MouseDeltaY = 0;
+  bool MouseLeftDown = false;
+  bool MouseMiddleDown = false;
+  bool MouseRightDown = false;
+  float MouseWheel = 0;
+
+  bool InViewport() const {
+    if (MouseX < ViewportX) {
+      return false;
+    }
+    if (MouseX > ViewportWidth) {
+      return false;
+    }
+    if (MouseY < 0) {
+      return false;
+    }
+    if (MouseY > ViewportHeight) {
+      return false;
+    }
+    return true;
+  }
 };
 
 struct Ray {
@@ -279,14 +299,18 @@ struct Camera {
     Transform.Translation.z = Gaze.z + z * GazeDistance;
   }
 
-  void MouseInputTurntable(const MouseState &mouse) {
-    if (mouse.RightDown) {
-      YawPitch(static_cast<int>(mouse.DeltaX), static_cast<int>(mouse.DeltaY));
+  void MouseInputTurntable(const WindowMouseState &mouse) {
+    Projection.SetRect(mouse.ViewportX, mouse.ViewportY, mouse.ViewportWidth,
+                       mouse.ViewportHeight);
+    if (mouse.MouseRightDown) {
+      YawPitch(static_cast<int>(mouse.MouseDeltaX),
+               static_cast<int>(mouse.MouseDeltaY));
     }
-    if (mouse.MiddleDown) {
-      Shift(static_cast<int>(mouse.DeltaX), static_cast<int>(mouse.DeltaY));
+    if (mouse.MouseMiddleDown) {
+      Shift(static_cast<int>(mouse.MouseDeltaX),
+            static_cast<int>(mouse.MouseDeltaY));
     }
-    Dolly(static_cast<int>(mouse.Wheel));
+    Dolly(static_cast<int>(mouse.MouseWheel));
   }
 
   void Update() {
@@ -347,24 +371,8 @@ struct Camera {
     return ret;
   }
 
-  std::optional<Ray> GetRay(const MouseState &mouse) const {
-    return GetRay(mouse.X, mouse.Y);
-  }
-
-  bool InViewport(const MouseState &mouse) const {
-    if (mouse.X < 0) {
-      return false;
-    }
-    if (mouse.X > Projection.Viewport.Width) {
-      return false;
-    }
-    if (mouse.Y < 0) {
-      return false;
-    }
-    if (mouse.Y > Projection.Viewport.Height) {
-      return false;
-    }
-    return true;
+  std::optional<Ray> GetRay(const WindowMouseState &mouse) const {
+    return GetRay(mouse.MouseX, mouse.MouseY);
   }
 };
 

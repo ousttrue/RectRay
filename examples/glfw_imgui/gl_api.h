@@ -593,7 +593,7 @@ struct RenderTarget {
     }
 
     Fbo->Bind();
-    ClearViewport(width, height, color, 1.0f);
+    ClearViewport((int)width, (int)height, color, 1.0f);
 
     return FboTexture->Handle();
   }

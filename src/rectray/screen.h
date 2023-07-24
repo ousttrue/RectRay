@@ -9,7 +9,7 @@ class Screen {
   DrawList m_drawlist;
 
 public:
-  void Begin(const Camera &camera, const MouseState &mouse) {
+  void Begin(const Camera &camera, const WindowMouseState &mouse) {
     m_drawlist.Clear();
   }
   DrawList &End() { return m_drawlist; }

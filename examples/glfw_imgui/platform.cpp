@@ -212,6 +212,8 @@ bool Platform::CreateWindow() { return m_impl->CreateWindow(); }
 
 bool Platform::BeginFrame() { return m_impl->BeginFrame(); }
 
-void Platform::UpdateGui() { m_impl->UpdateGui(clear_color); }
+void Platform::UpdateGui(float clear_color[4]) {
+  m_impl->UpdateGui(clear_color);
+}
 
 void Platform::EndFrame() { m_impl->EndFrame(); }
