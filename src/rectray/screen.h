@@ -5,6 +5,16 @@
 
 namespace rectray {
 
+enum class Space {
+  World,
+  Local,
+};
+
+struct Result {
+  void *Selected;
+  std::optional<DirectX::XMFLOAT4X4> Updated;
+};
+
 class Screen {
   DrawList m_drawlist;
 
@@ -12,8 +22,12 @@ public:
   void Begin(const Camera &camera, const WindowMouseState &mouse) {
     m_drawlist.Clear();
   }
-  DrawList &End() { return m_drawlist; }
-  void Cube(const DirectX::XMFLOAT4X4 &matrix) {
+  Result End() { return {}; }
+  DrawList &DrawList() { return m_drawlist; }
+
+  void Translate(void *id, Space space, const DirectX::XMMATRIX m) {}
+
+  void Cube(const DirectX::XMMATRIX m) {
     const float s = 0.5f;
     //  7+-+6
     //  / /|
@@ -36,7 +50,6 @@ public:
         {4, 0, 3, 7}, {5, 1, 0, 4}, {5, 4, 7, 6}, //-x-y-z
     };
 
-    auto m = DirectX::XMLoadFloat4x4(&matrix);
     for (int i = 0; i < 8; ++i) {
       DirectX::XMStoreFloat3(
           &p[i], DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&p[i]), m));

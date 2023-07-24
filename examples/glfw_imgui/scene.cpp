@@ -19,6 +19,19 @@ struct Object {
         DirectX::XMMatrixScaling(Shape.x, Shape.y, Shape.z),
         Transform.Matrix());
   }
+
+  bool SetMatrix(const DirectX::XMMATRIX m) {
+    DirectX::XMVECTOR s;
+    DirectX::XMVECTOR r;
+    DirectX::XMVECTOR t;
+    if (!DirectX::XMMatrixDecompose(&s, &r, &t, m)) {
+      return false;
+    }
+    DirectX::XMStoreFloat3((DirectX::XMFLOAT3 *)&Shape, s);
+    DirectX::XMStoreFloat4((DirectX::XMFLOAT4 *)&Transform.Rotation, r);
+    DirectX::XMStoreFloat3((DirectX::XMFLOAT3 *)&Transform.Translation, t);
+    return true;
+  }
 };
 
 struct ImGuiVisitor {
@@ -76,10 +89,20 @@ struct SceneImpl {
   Triangle m_triangle;
 
   rectray::Screen m_screen;
-  std::list<Object> m_objects;
+  std::list<std::shared_ptr<Object>> m_objects;
+  std::shared_ptr<Object> m_selected;
 
 public:
-  SceneImpl() { m_objects.push_back({}); }
+  SceneImpl() {
+    m_objects.push_back(std::make_shared<Object>());
+    m_objects.back()->Transform.Translation = {};
+
+    m_objects.push_back(std::make_shared<Object>());
+    m_objects.back()->Transform.Translation = {2, 0, 0};
+
+    m_objects.push_back(std::make_shared<Object>());
+    m_objects.back()->Transform.Translation = {0, 2, 0};
+  }
 
   void Render(float width, float height, rectray::Camera &camera,
               const rectray::WindowMouseState &mouse, ImDrawList *imDrawList,
@@ -91,12 +114,29 @@ public:
     m_screen.Begin(camera, mouse);
 
     for (auto &o : m_objects) {
-      DirectX::XMFLOAT4X4 m;
-      DirectX::XMStoreFloat4x4(&m, o.Matrix());
+      auto m = o->Matrix();
       m_screen.Cube(m);
+      if (o == m_selected) {
+        m_screen.Translate(o.get(), rectray::Space::Local, m);
+      }
     }
 
-    auto drawlist = m_screen.End();
+    auto result = m_screen.End();
+    if (result.Selected) {
+      for (auto &o : m_objects) {
+        if (o.get() == result.Selected) {
+          m_selected = o;
+          if (result.Updated) {
+            m_selected->SetMatrix(DirectX::XMLoadFloat4x4(&*result.Updated));
+          }
+          break;
+        }
+      }
+    } else {
+      m_selected = nullptr;
+    }
+
+    auto drawlist = m_screen.DrawList();
     drawlist.GizmoToMarker(camera);
     for (auto &c : drawlist.Markers) {
       std::visit(
