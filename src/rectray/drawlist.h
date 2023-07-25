@@ -9,7 +9,36 @@
 namespace rectray {
 
 namespace gizmo {
-// 3D
+
+struct Rect {
+  DirectX::XMFLOAT3 P0;
+  DirectX::XMFLOAT3 P1;
+  DirectX::XMFLOAT3 P2;
+  DirectX::XMFLOAT3 P3;
+};
+
+struct Cube {
+  DirectX::XMFLOAT4X4 Matrix;
+};
+
+struct Frustum {
+  DirectX::XMFLOAT3 Position;
+  DirectX::XMFLOAT4 Rotation;
+  float Near;
+  float Far;
+  float FovY;
+  float AspectRatio;
+};
+
+struct Command {
+  std::variant<Rect, Cube, Frustum> Shape;
+  uint32_t Color;
+};
+
+} // namespace gizmo
+
+namespace primitive {
+
 struct Line {
   DirectX::XMFLOAT3 P0;
   DirectX::XMFLOAT3 P1;
@@ -21,19 +50,12 @@ struct Triangle {
   DirectX::XMFLOAT3 P2;
 };
 
-struct Rect {
-  DirectX::XMFLOAT3 P0;
-  DirectX::XMFLOAT3 P1;
-  DirectX::XMFLOAT3 P2;
-  DirectX::XMFLOAT3 P3;
-};
-
 struct Command {
-  std::variant<Line, Triangle, Rect> Shape;
+  std::variant<Line, Triangle> Shape;
   uint32_t Color;
 };
 
-} // namespace gizmo
+} // namespace primitive
 
 namespace marker {
 // 2D
@@ -71,6 +93,7 @@ struct Command {
 
 struct DrawList {
   std::vector<gizmo::Command> Gizmos;
+  std::vector<primitive::Command> Primitives;
   std::vector<marker::Command> Markers;
 
   void Clear() {
@@ -135,8 +158,6 @@ struct DrawList {
       DirectX::XMFLOAT4X4 Matrix;
       uint32_t Color;
 
-      void operator()(const gizmo::Line &shape) {}
-      void operator()(const gizmo::Triangle &shape) {}
       void operator()(const gizmo::Rect &r) {
         auto m = DirectX::XMLoadFloat4x4(&Matrix);
         DirectX::XMFLOAT4 p0;
@@ -172,6 +193,44 @@ struct DrawList {
         points[4] = points[0];
         Self->AddPolyline(points, 5, Color, 0, 1);
       }
+      void operator()(const gizmo::Cube &cube) {
+
+        const float s = 0.5f;
+        //  7+-+6
+        //  / /|
+        // 3+-+2+5
+        // | |/
+        // 0+-+1
+        DirectX::XMFLOAT3 p[]{
+            {-s, -s, +s}, {+s, -s, +s}, {+s, +s, +s}, {-s, +s, +s},
+            {-s, -s, -s}, {+s, -s, -s}, {+s, +s, -s}, {-s, +s, -s},
+        };
+
+        struct Face {
+          int I0;
+          int I1;
+          int I2;
+          int I3;
+        };
+        Face faces[6] = {
+            {1, 5, 6, 2}, {2, 6, 7, 3}, {0, 1, 2, 3}, //+x+y+z
+            {4, 0, 3, 7}, {5, 1, 0, 4}, {5, 4, 7, 6}, //-x-y-z
+        };
+
+        auto m = DirectX::XMLoadFloat4x4(&cube.Matrix);
+        for (int i = 0; i < 8; ++i) {
+          DirectX::XMStoreFloat3(&p[i], DirectX::XMVector3Transform(
+                                            DirectX::XMLoadFloat3(&p[i]), m));
+        }
+
+        for (int i = 0; i < 6; ++i) {
+          auto [i0, i1, i2, i3] = faces[i];
+
+          gizmo::Rect rect{p[i0], p[i1], p[i2], p[i3]};
+          (*this)(rect);
+        }
+      }
+      void operator()(const gizmo::Frustum &frustum) {}
     };
 
     for (auto &g : Gizmos) {

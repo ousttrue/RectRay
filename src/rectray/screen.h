@@ -29,53 +29,21 @@ public:
   Result End() { return {}; }
   DrawList &DrawList() { return m_drawlist; }
 
-  void Translate(void *id, Space space, const DirectX::XMMATRIX m) {}
+  void Translate(void *id, Space space, DirectX::XMMATRIX m) {}
 
-  void Cube(const DirectX::XMMATRIX m) {
-    const float s = 0.5f;
-    //  7+-+6
-    //  / /|
-    // 3+-+2+5
-    // | |/
-    // 0+-+1
-    DirectX::XMFLOAT3 p[]{
-        {-s, -s, +s}, {+s, -s, +s}, {+s, +s, +s}, {-s, +s, +s},
-        {-s, -s, -s}, {+s, -s, -s}, {+s, +s, -s}, {-s, +s, -s},
-    };
-
-    struct Face {
-      int I0;
-      int I1;
-      int I2;
-      int I3;
-    };
-    Face faces[6] = {
-        {1, 5, 6, 2}, {2, 6, 7, 3}, {0, 1, 2, 3}, //+x+y+z
-        {4, 0, 3, 7}, {5, 1, 0, 4}, {5, 4, 7, 6}, //-x-y-z
-    };
-
-    for (int i = 0; i < 8; ++i) {
-      DirectX::XMStoreFloat3(
-          &p[i], DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&p[i]), m));
-    }
-
+  void Cube(DirectX::XMMATRIX m) {
     auto hover = false;
     if (m_ray) {
       if (auto hit = Intersects(*m_ray, m)) {
         hover = true;
       }
     }
-
     // ABGR
     auto YELLOW = 0xFF00FFFF;
     auto WHITE = 0xFFFFFFFF;
-
-    for (int i = 0; i < 6; ++i) {
-      auto [i0, i1, i2, i3] = faces[i];
-
-      gizmo::Rect rect{p[i0], p[i1], p[i2], p[i3]};
-      m_drawlist.Gizmos.push_back({rect, hover ? YELLOW : WHITE});
-    }
+    gizmo::Cube cube;
+    DirectX::XMStoreFloat4x4(&cube.Matrix, m);
+    m_drawlist.Gizmos.push_back({cube, hover ? YELLOW : WHITE});
   }
 };
 
