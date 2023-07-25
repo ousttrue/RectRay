@@ -79,21 +79,21 @@ public:
 
     for (auto &o : scene->Objects) {
       auto m = o->Matrix();
-      interface.Cube(m);
+      interface.Cube(o.get(), m);
       if (o == scene->Selected) {
-        interface.Translate(o.get(), rectray::Space::Local, m);
+        // interface.Translate(o.get(), rectray::Space::Local, m);
+        auto s = o->Transform.Translation;
+        interface.Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF);
+        interface.Arrow(s, {s.x, s.y + 1, s.z}, 0xFF00FF00);
+        interface.Arrow(s, {s.x, s.y, s.z + 1}, 0xFFFF0000);
       }
     }
 
     auto result = interface.End();
-    if (result.Selected) {
+    if (mouse.MouseLeftDown) {
       for (auto &o : scene->Objects) {
-        if (o.get() == result.Selected) {
+        if (o.get() == result.Closest) {
           scene->Selected = o;
-          if (result.Updated) {
-            scene->Selected->SetMatrix(
-                DirectX::XMLoadFloat4x4(&*result.Updated));
-          }
           break;
         }
       }

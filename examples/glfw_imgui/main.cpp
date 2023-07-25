@@ -22,7 +22,6 @@ struct CameraState {
   void Show() {
     ImGui::Begin(Name.c_str());
     {
-
       ImGui::ColorEdit3("clear color", ClearColor);
 
       // camera

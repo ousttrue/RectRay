@@ -8,6 +8,25 @@
 
 namespace rectray {
 
+inline DirectX::XMFLOAT2 operator+(const DirectX::XMFLOAT2 &l,
+                                   const DirectX::XMFLOAT2 &r) {
+  return DirectX::XMFLOAT2{l.x + r.x, l.y + r.y};
+}
+inline DirectX::XMFLOAT2 operator-(const DirectX::XMFLOAT2 &l,
+                                   const DirectX::XMFLOAT2 &r) {
+  return DirectX::XMFLOAT2{l.x - r.x, l.y - r.y};
+}
+inline DirectX::XMFLOAT2 operator*(const DirectX::XMFLOAT2 &l, float f) {
+  return DirectX::XMFLOAT2{l.x * f, l.y * f};
+}
+inline float Length(const DirectX::XMFLOAT2 &v) {
+  return sqrt(v.x * v.x + v.y * v.y);
+}
+inline DirectX::XMFLOAT2 Normalized(const DirectX::XMFLOAT2 &v) {
+  auto f = 1.0f / Length(v);
+  return {v.x * f, v.y * f};
+}
+
 namespace gizmo {
 
 struct Rect {
@@ -27,9 +46,25 @@ struct Frustum {
   float Far;
 };
 
+struct Arrow {
+  DirectX::XMFLOAT3 P0;
+  DirectX::XMFLOAT3 P1;
+  static std::tuple<DirectX::XMFLOAT2, DirectX::XMFLOAT2>
+  GetSide(const DirectX::XMFLOAT2 &s, const DirectX::XMFLOAT2 &e) {
+    auto dir = Normalized(e - s) * 10.0f;
+    auto p = e - dir;
+    auto x = DirectX::XMFLOAT2{-dir.y, dir.x};
+    auto l = p + x;
+    auto r = p - x;
+    return {l, r};
+  }
+};
+
 struct Command {
-  std::variant<Rect, Cube, Frustum> Shape;
+  std::variant<Rect, Cube, Frustum, Arrow> Shape;
   uint32_t Color;
+  void *Handle;
+  std::optional<float> RayHit;
 };
 
 } // namespace gizmo
@@ -50,6 +85,7 @@ struct Triangle {
 struct Command {
   std::variant<Line, Triangle> Shape;
   uint32_t Color;
+  std::optional<float> RayHit;
 };
 
 } // namespace primitive
@@ -284,6 +320,23 @@ struct DrawList {
           gizmo::Rect rect{p0, p1, p2, p3};
           (*this)(rect);
         }
+      }
+
+      void operator()(const gizmo::Arrow &l) {
+        auto m = DirectX::XMLoadFloat4x4(&Matrix);
+        DirectX::XMFLOAT4 p0, p1;
+        DirectX::XMStoreFloat4(
+            &p0, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&l.P0), m));
+        DirectX::XMStoreFloat4(
+            &p1, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&l.P1), m));
+
+        const float THICKNESS = 4;
+        auto c0 = Mouse.ClipToScreen(p0);
+        auto c1 = Mouse.ClipToScreen(p1);
+        Self->AddLine(c0, c1, Color, THICKNESS);
+
+        auto [hl, hr] = gizmo::Arrow::GetSide(c0, c1);
+        Self->AddTriangleFilled(c1, hl, hr, Color);
       }
     };
 

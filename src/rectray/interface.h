@@ -15,7 +15,8 @@ enum class Space {
 };
 
 struct Result {
-  void *Selected;
+  void *Closest;
+  void *Target;
   std::optional<DirectX::XMFLOAT4X4> Updated;
 };
 
@@ -32,27 +33,53 @@ public:
   Context m_context;
   void Begin(const Camera &camera, const ScreenState &mouse) {
     m_drawlist.Clear();
+
     m_context = Context{camera, mouse};
     if (mouse.Focus != ScreenFocus::None) {
       m_context.Ray = camera.GetRay(mouse);
     }
   }
-  Result End() { return {}; }
-  DrawList &DrawList() { return m_drawlist; }
-
-  void Translate(void *id, Space space, DirectX::XMMATRIX m) {}
-
-  void Cube(DirectX::XMMATRIX m) {
-    auto hover = false;
-    if (m_context.Ray) {
-      if (auto hit = Intersects(*m_context.Ray, m)) {
-        hover = true;
+  Result End() {
+    auto closest = std::numeric_limits<float>::infinity();
+    Result result{};
+    gizmo::Command *gizmo = nullptr;
+    for (auto &g : m_drawlist.Gizmos) {
+      if (g.RayHit && *g.RayHit < closest) {
+        result.Closest = g.Handle;
+        gizmo = &g;
+        closest = *g.RayHit;
       }
     }
+
+    if (gizmo) {
+      // hover
+      gizmo->Color = YELLOW;
+    }
+
+    return result;
+  }
+  DrawList &DrawList() { return m_drawlist; }
+
+  void Arrow(const DirectX::XMFLOAT3 &s, const DirectX::XMFLOAT3 &e,
+             uint32_t color) {
+    gizmo::Arrow allow{
+        s,
+        e,
+    };
+    m_drawlist.Gizmos.push_back({allow, color});
+  }
+
+  void Cube(void *handle, DirectX::XMMATRIX m) {
+    std::optional<float> hit;
+    if (m_context.Ray) {
+      hit = Intersects(*m_context.Ray, m);
+    }
+
     // ABGR
     gizmo::Cube cube;
     DirectX::XMStoreFloat4x4(&cube.Matrix, m);
-    m_drawlist.Gizmos.push_back({cube, hover ? YELLOW : WHITE});
+    m_drawlist.Gizmos.push_back(
+        {cube, WHITE, handle, hit}); // hover ? YELLOW : WHITE});
   }
 
   void Frustum(DirectX::XMMATRIX ViewProjection, float zNear, float zFar) {
