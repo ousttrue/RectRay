@@ -11,17 +11,7 @@
 #ifdef __EMSCRIPTEN__
 #define GL_GLEXT_PROTOTYPES
 #define GL_SILENCE_DEPRECATION
-// #include <imgui_impl_opengl3.h>
-// #if defined(IMGUI_IMPL_OPENGL_ES2)
-// #include <GLES2/gl2.h>
-// #include <GLES2/gl2ext.h>
-// #define glBindVertexArray glBindVertexArrayOES
-// #define glGenVertexArrays glGenVertexArraysOES
-// #define glDeleteVertexArrays glDeleteVertexArraysOES
-// #elif defined(IMGUI_IMPL_OPENGL_ES3)
 #include <GLES3/gl32.h>
-// #include <GLES3/gl3ext.h>
-// #endif
 inline const char *SHADER_HEADER = "#version 300 es\nprecision highp float;\n";
 
 #else
@@ -455,8 +445,11 @@ public:
                    GLInternalFormat(data.Format),
                    useFloat ? GL_FLOAT : GL_UNSIGNED_BYTE, data.Pixels);
       glGenerateMipmap(GL_TEXTURE_2D);
-      glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &m_width);
-      glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &m_height);
+      // glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &m_width);
+      // glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT,
+      // &m_height);
+      m_width = data.Width;
+      m_height = data.Height;
     }
     Unbind();
   }

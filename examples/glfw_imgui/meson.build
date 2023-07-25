@@ -7,11 +7,13 @@ link_args = []
 
 compiler = meson.get_compiler('cpp')
 if compiler.get_id() == 'emscripten'
+    args += ['-D__EMSCRIPTEN__=1']
     link_args += [
         '-sUSE_GLFW=3',
         '-sUSE_WEBGL2=1',
-        # '-sFULL_ES3=1',
-        '-sLEGACY_GL_EMULATION=1',
+        # '-sMAX_WEBGL_VERSION=2',
+        '-sFULL_ES3=1',
+        # '-sLEGACY_GL_EMULATION=1',
     ]
     suffix = 'html'
 else
