@@ -16,7 +16,10 @@ jobs:
       - name: Install dependencies
         run: pip install meson ninja
       - name: Verify meson
-        run: find .local -name mesonbuild 
+        run: |
+          pwd
+          which meson
+          find -name mesonbuild .local
       - name: patch meson
         run: patch -u .local/lib/python3.8/site-packages/mesonbuild/compilers/cpp.py < meson.patch
       - uses: mymindstorm/setup-emsdk@v11
