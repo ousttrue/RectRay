@@ -19,9 +19,9 @@ jobs:
         run: |
           pwd
           which meson
-          find -name mesonbuild .local
+          find -name mesonbuild /home/runner/.local
       - name: patch meson
-        run: patch -u .local/lib/python3.8/site-packages/mesonbuild/compilers/cpp.py < meson.patch
+        run: patch -u /home/runner/.local/lib/python3.8/site-packages/mesonbuild/compilers/cpp.py < meson.patch
       - uses: mymindstorm/setup-emsdk@v11
       - name: Verify
         run: emcc -v
