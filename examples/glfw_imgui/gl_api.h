@@ -513,7 +513,7 @@ inline void ClearViewport(int width, int height, const float clear_color[4],
                  clear_color[3]);
   }
   if (depth) {
-    glClearDepth(*depth);
+    glClearDepthf(*depth);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   } else {
     glClear(GL_COLOR_BUFFER_BIT);
