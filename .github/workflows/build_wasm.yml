@@ -18,7 +18,7 @@ jobs:
       - name: Verify meson
         run: which meson
       - name: patch meson
-        run: patch -u .local/lib/python3.10/site-packages/mesonbuild/compilers/cpp.py < meson.patch
+        run: patch -u .local/lib/python3.8/site-packages/mesonbuild/compilers/cpp.py < meson.patch
       - uses: mymindstorm/setup-emsdk@v11
       - name: Verify
         run: emcc -v
