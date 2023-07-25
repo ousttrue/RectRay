@@ -22,7 +22,7 @@ jobs:
         run: emcc -v
       - name: build wasm
         run: |
-          meson setup build --cross-file wasm.ini -Dcpp_std=c++20
+          meson setup build --cross-file wasm.ini -Dcpp_std=c++2b
           meson compile -C build
           mkdir public
           cp build/examples/rectray_glfw_imgui.* public/
