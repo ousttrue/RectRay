@@ -95,6 +95,7 @@ struct DrawList {
 
   void Clear() {
     Gizmos.clear();
+    Primitives.clear();
     Markers.clear();
   }
 
@@ -143,16 +144,16 @@ struct DrawList {
     Markers.push_back({line, col});
   }
 
-  void GizmoToMarker(const Camera &camera, const WindowMouseState &mouse) {
+  void ToMarker(const Camera &camera, const ScreenState &mouse) {
 
     auto vp = camera.ViewProjection();
     DirectX::XMFLOAT4X4 m;
     DirectX::XMStoreFloat4x4(&m, vp);
 
-    struct Visitor {
-      const Camera &Camera;
-      const WindowMouseState &Mouse;
+    struct GizmoVisitor {
       DrawList *Self;
+      const Camera &Camera;
+      const ScreenState &Mouse;
       DirectX::XMFLOAT4X4 Matrix;
       uint32_t Color;
 
@@ -287,9 +288,37 @@ struct DrawList {
     };
 
     for (auto &g : Gizmos) {
-      std::visit(Visitor{camera, mouse, this, m, g.Color}, g.Shape);
+      std::visit(GizmoVisitor{this, camera, mouse, m, g.Color}, g.Shape);
     }
     Gizmos.clear();
+
+    struct PrimitiveVisitor {
+      DrawList *Self;
+      const Camera &Camera;
+      const ScreenState &Mouse;
+      DirectX::XMFLOAT4X4 Matrix;
+      uint32_t Color;
+
+      void operator()(const primitive::Line &l) {
+        auto m = DirectX::XMLoadFloat4x4(&Matrix);
+        DirectX::XMFLOAT4 p0, p1;
+        DirectX::XMStoreFloat4(
+            &p0, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&l.P0), m));
+        DirectX::XMStoreFloat4(
+            &p1, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&l.P1), m));
+
+        Self->AddLine(Mouse.ClipToScreen(p0), Mouse.ClipToScreen(p1), Color);
+      }
+
+      void operator()(const primitive::Triangle &t) {
+        auto m = DirectX::XMLoadFloat4x4(&Matrix);
+      }
+    };
+
+    for (auto &p : Primitives) {
+      std::visit(PrimitiveVisitor{this, camera, mouse, m, p.Color}, p.Shape);
+    }
+    Primitives.clear();
   }
 };
 

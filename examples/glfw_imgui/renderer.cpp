@@ -68,24 +68,24 @@ struct RendererImpl {
 public:
   RendererImpl() {}
 
-  void Render(rectray::Screen &screen, rectray::Camera &camera,
-              const rectray::WindowMouseState &mouse, ImDrawList *imDrawList,
-              Scene *scene, rectray::Camera *other) {
+  void Render(rectray::Interface &interface, rectray::Camera &camera,
+              const rectray::ScreenState &mouse, ImDrawList *imDrawList,
+              Scene *scene, const rectray::Interface *other) {
     // only ViewportX update
     camera.Projection.SetAspectRatio(mouse.ViewportWidth, mouse.ViewportHeight);
     camera.Update();
 
-    screen.Begin(camera, mouse);
+    interface.Begin(camera, mouse);
 
     for (auto &o : scene->Objects) {
       auto m = o->Matrix();
-      screen.Cube(m);
+      interface.Cube(m);
       if (o == scene->Selected) {
-        screen.Translate(o.get(), rectray::Space::Local, m);
+        interface.Translate(o.get(), rectray::Space::Local, m);
       }
     }
 
-    auto result = screen.End();
+    auto result = interface.End();
     if (result.Selected) {
       for (auto &o : scene->Objects) {
         if (o.get() == result.Selected) {
@@ -106,12 +106,17 @@ public:
     }
 
     if (other) {
-      screen.Frustum(other->ViewProjection(), other->Projection.NearZ,
-                     other->Projection.FarZ);
+      auto &otherCamera = other->m_context.Camera;
+      interface.Frustum(otherCamera.ViewProjection(),
+                        otherCamera.Projection.NearZ,
+                        otherCamera.Projection.FarZ);
+      if (auto ray = other->m_context.Ray) {
+        interface.Ray(*ray, otherCamera.Projection.FarZ);
+      }
     }
 
-    auto drawlist = screen.DrawList();
-    drawlist.GizmoToMarker(camera, mouse);
+    auto drawlist = interface.DrawList();
+    drawlist.ToMarker(camera, mouse);
     for (auto &c : drawlist.Markers) {
       std::visit(
           ImGuiVisitor{imDrawList, c, {mouse.ViewportX, mouse.ViewportY}},
@@ -129,9 +134,9 @@ Renderer::Renderer() : m_impl(new RendererImpl) {
 
 Renderer::~Renderer() { delete m_impl; }
 
-void Renderer::Render(rectray::Screen &screen, rectray::Camera &camera,
-                      const rectray::WindowMouseState &mouse,
+void Renderer::Render(rectray::Interface &interface, rectray::Camera &camera,
+                      const rectray::ScreenState &mouse,
                       struct ImDrawList *imDrawList, struct Scene *scene,
-                      rectray::Camera *other) {
-  m_impl->Render(screen, camera, mouse, imDrawList, scene, other);
+                      const rectray::Interface *other) {
+  m_impl->Render(interface, camera, mouse, imDrawList, scene, other);
 }

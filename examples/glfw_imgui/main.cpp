@@ -14,10 +14,47 @@
 #endif
 
 struct CameraState {
+  std::string Name;
   rectray::Camera Camera;
-  rectray::Screen Screen;
+  rectray::Interface Interface;
   float ClearColor[4];
   Renderer Renderer;
+  void Show() {
+    ImGui::Begin(Name.c_str());
+    {
+
+      ImGui::ColorEdit3("clear color", ClearColor);
+
+      // camera
+      ImGui::Separator();
+      ImGui::TextUnformatted("[camera]");
+      ImGui::DragFloat("camera near", &Camera.Projection.NearZ);
+      Camera.Projection.NearZ = std::max(
+          0.01f, std::min(Camera.Projection.NearZ, Camera.Projection.FarZ - 1));
+      ImGui::DragFloat("camera far", &Camera.Projection.FarZ);
+      ImGui::InputFloat3("camera pos", &Camera.Transform.Translation.x);
+      Camera.Projection.FarZ =
+          std::max(Camera.Projection.FarZ, Camera.Projection.NearZ + 1);
+
+      if (auto ray = Interface.m_context.Ray) {
+        ImGui::BeginDisabled(false);
+        ImGui::InputFloat3("ray dir", &ray->Direction.x);
+      } else {
+        float zero[3]{0, 0, 0};
+        ImGui::InputFloat3("ray dir", zero);
+        ImGui::BeginDisabled(true);
+      }
+
+      ImGui::EndDisabled();
+    }
+    ImGui::End();
+  }
+  // ImGui::GetWindowDrawList()
+  //&mainCamera.Screen
+  void Render(const rectray::ScreenState &state, ImDrawList *imDrawList,
+              Scene *scene, const rectray::Interface *other) {
+    Renderer.Render(Interface, Camera, state, imDrawList, scene, other);
+  }
 };
 
 // Main code
@@ -42,6 +79,7 @@ int main(int, char **) {
   }
 
   CameraState mainCamera{
+      .Name = "main camera",
       .Camera{
           .Projection{
               .NearZ = 1,
@@ -55,6 +93,7 @@ int main(int, char **) {
       .ClearColor{0.1f, 0.2f, 0.1f, 1.0f},
   };
   CameraState debugCamera{
+      .Name = "debug camera",
       .Camera{
           .Projection{
               .NearZ = 1,
@@ -85,27 +124,12 @@ int main(int, char **) {
 
     static ImVec2 lastMouse = io.MousePos;
 
-    ImGui::Begin("Scene");
-    {
+    mainCamera.Show();
+    debugCamera.Show();
+
+    if (ImGui::Begin("scene")) {
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-      ImGui::ColorEdit3("clear color", mainCamera.ClearColor);
-
-      // camera
-      ImGui::Separator();
-      ImGui::TextUnformatted("[camera]");
-      ImGui::DragFloat("camera near", &mainCamera.Camera.Projection.NearZ);
-      mainCamera.Camera.Projection.NearZ =
-          std::max(0.01f, std::min(mainCamera.Camera.Projection.NearZ,
-                                   mainCamera.Camera.Projection.FarZ - 1));
-      ImGui::DragFloat("camera far", &mainCamera.Camera.Projection.FarZ);
-      ImGui::InputFloat3("camera pos",
-                         &mainCamera.Camera.Transform.Translation.x);
-      mainCamera.Camera.Projection.FarZ =
-          std::max(mainCamera.Camera.Projection.FarZ,
-                   mainCamera.Camera.Projection.NearZ + 1);
-
       // scene
       ImGui::Separator();
       ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
@@ -144,31 +168,32 @@ int main(int, char **) {
                               nullptr, nullptr,
                               ImGuiButtonFlags_MouseButtonMiddle |
                                   ImGuiButtonFlags_MouseButtonRight);
-        auto active = ImGui::IsItemActive();
-        auto hover = ImGui::IsItemHovered();
 
-        rectray::WindowMouseState state{
+        auto focus = rectray::ScreenFocus::None;
+        if (ImGui::IsItemActive()) {
+          focus = rectray::ScreenFocus::Active;
+        } else if (ImGui::IsItemHovered()) {
+          focus = rectray::ScreenFocus::Hover;
+        }
+
+        rectray::ScreenState state{
+            .Focus = focus,
             .ViewportX = pos.x,
             .ViewportY = pos.y,
             .ViewportWidth = size.x,
             .ViewportHeight = size.y,
             .MouseX = io.MousePos.x,
             .MouseY = io.MousePos.y,
+            .MouseDeltaX = io.MouseDelta.x,
+            .MouseDeltaY = io.MouseDelta.y,
+            .MouseLeftDown = io.MouseDown[0],
+            .MouseRightDown = io.MouseDown[1],
+            .MouseMiddleDown = io.MouseDown[2],
+            .MouseWheel = io.MouseWheel,
         };
-        if (active) {
-          state.MouseDeltaX = io.MouseDelta.x;
-          state.MouseDeltaY = io.MouseDelta.y;
-          state.MouseLeftDown = io.MouseDown[0];
-          state.MouseRightDown = io.MouseDown[1];
-          state.MouseMiddleDown = io.MouseDown[2];
-        }
-        if (hover) {
-          state.MouseWheel = io.MouseWheel;
-        }
 
-        debugCamera.Renderer.Render(debugCamera.Screen, debugCamera.Camera,
-                                    state, ImGui::GetWindowDrawList(), &scene,
-                                    &mainCamera.Camera);
+        debugCamera.Render(state, ImGui::GetWindowDrawList(), &scene,
+                           &mainCamera.Interface);
 
         renderTarget->End();
       }
@@ -179,22 +204,26 @@ int main(int, char **) {
     // render to background
     //
     {
-      rectray::WindowMouseState state{
+      auto focus = rectray::ScreenFocus::None;
+      if (!io.WantCaptureMouse) {
+        focus = rectray::ScreenFocus::Active;
+      }
+
+      rectray::ScreenState state{
+          .Focus = focus,
           .ViewportX = 0,
           .ViewportY = 0,
           .ViewportWidth = io.DisplaySize.x,
           .ViewportHeight = io.DisplaySize.y,
           .MouseX = io.MousePos.x,
           .MouseY = io.MousePos.y,
+          .MouseDeltaX = io.MouseDelta.x,
+          .MouseDeltaY = io.MouseDelta.y,
+          .MouseLeftDown = io.MouseDown[0],
+          .MouseRightDown = io.MouseDown[1],
+          .MouseMiddleDown = io.MouseDown[2],
+          .MouseWheel = io.MouseWheel,
       };
-      if (!io.WantCaptureMouse) {
-        state.MouseDeltaX = io.MouseDelta.x;
-        state.MouseDeltaY = io.MouseDelta.y;
-        state.MouseLeftDown = io.MouseDown[0];
-        state.MouseRightDown = io.MouseDown[1];
-        state.MouseMiddleDown = io.MouseDown[2];
-        state.MouseWheel = io.MouseWheel;
-      }
 
       glEnable(GL_DEPTH_TEST);
       // glDepthFunc(GL_ALWAYS);
@@ -206,9 +235,8 @@ int main(int, char **) {
                    mainCamera.ClearColor[3]);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      mainCamera.Renderer.Render(mainCamera.Screen, mainCamera.Camera, state,
-                                 ImGui::GetBackgroundDrawList(), &scene,
-                                 &debugCamera.Camera);
+      mainCamera.Render(state, ImGui::GetBackgroundDrawList(), &scene,
+                        &debugCamera.Interface);
     }
 
     lastMouse = io.MousePos;

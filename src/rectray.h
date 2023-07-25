@@ -2,4 +2,4 @@
 
 #include "rectray/camera.h"
 #include "rectray/drawlist.h"
-#include "rectray/screen.h"
+#include "rectray/interface.h"

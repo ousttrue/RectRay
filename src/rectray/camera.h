@@ -143,7 +143,16 @@ struct EuclideanTransform {
   }
 };
 
-struct WindowMouseState {
+enum class ScreenFocus {
+  None,
+  // not drag. in area
+  Hover,
+  // drag captured
+  Active,
+};
+
+struct ScreenState {
+  ScreenFocus Focus = ScreenFocus::None;
   float ViewportX;
   float ViewportY;
   float ViewportWidth;
@@ -153,8 +162,8 @@ struct WindowMouseState {
   float MouseDeltaX = 0;
   float MouseDeltaY = 0;
   bool MouseLeftDown = false;
-  bool MouseMiddleDown = false;
   bool MouseRightDown = false;
+  bool MouseMiddleDown = false;
   float MouseWheel = 0;
 
   bool InViewport() const {
@@ -171,6 +180,15 @@ struct WindowMouseState {
       return false;
     }
     return true;
+  }
+
+  DirectX::XMFLOAT2 ClipToScreen(const DirectX::XMFLOAT4 &c) const {
+    auto x = (c.x / c.w) * 0.5f + 0.5f;
+    auto y = (-c.y / c.w) * 0.5f + 0.5f;
+    return {
+        x * ViewportWidth,
+        y * ViewportHeight,
+    };
   }
 };
 
@@ -200,6 +218,14 @@ struct Ray {
         DirectX::XMVector3Normalize(DirectX::XMVector3TransformNormal(
             DirectX::XMLoadFloat3(&Direction), m)));
     return ray;
+  }
+
+  DirectX::XMFLOAT3 Point(float t) const {
+    return {
+        Origin.x + Direction.x * t,
+        Origin.y + Direction.y * t,
+        Origin.z + Direction.z * t,
+    };
   }
 };
 
@@ -294,17 +320,21 @@ struct Camera {
     Transform.Translation.z = Gaze.z + z * GazeDistance;
   }
 
-  void MouseInputTurntable(const WindowMouseState &mouse) {
+  void MouseInputTurntable(const ScreenState &mouse) {
     Projection.SetAspectRatio(mouse.ViewportWidth, mouse.ViewportHeight);
-    if (mouse.MouseRightDown) {
-      YawPitch(static_cast<int>(mouse.MouseDeltaX),
-               static_cast<int>(mouse.MouseDeltaY));
+    if (mouse.Focus == ScreenFocus::Active) {
+      if (mouse.MouseRightDown) {
+        YawPitch(static_cast<int>(mouse.MouseDeltaX),
+                 static_cast<int>(mouse.MouseDeltaY));
+      }
+      if (mouse.MouseMiddleDown) {
+        Shift(static_cast<int>(mouse.MouseDeltaX),
+              static_cast<int>(mouse.MouseDeltaY), mouse.ViewportHeight);
+      }
     }
-    if (mouse.MouseMiddleDown) {
-      Shift(static_cast<int>(mouse.MouseDeltaX),
-            static_cast<int>(mouse.MouseDeltaY), mouse.ViewportHeight);
+    if (mouse.Focus != ScreenFocus::None) {
+      Dolly(static_cast<int>(mouse.MouseWheel));
     }
-    Dolly(static_cast<int>(mouse.MouseWheel));
     Update();
   }
 
@@ -344,7 +374,7 @@ struct Camera {
   // v
   //
   // Y
-  std::optional<Ray> GetRay(const WindowMouseState &mouse) const {
+  std::optional<Ray> GetRay(const ScreenState &mouse) const {
     Ray ret{
         Transform.Translation,
     };
