@@ -1,5 +1,6 @@
 #include "gl_api.h"
 #include "platform.h"
+#include "renderer.h"
 #include "scene.h"
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -15,6 +16,7 @@
 struct CameraState {
   rectray::Camera Camera;
   float ClearColor[4];
+  Renderer Renderer;
 };
 
 // Main code
@@ -27,19 +29,32 @@ int main(int, char **) {
   auto &io = ImGui::GetIO();
 
   Scene scene;
+  {
+    scene.Objects.push_back(std::make_shared<Object>());
+    scene.Objects.back()->Transform.Translation = {};
+
+    scene.Objects.push_back(std::make_shared<Object>());
+    scene.Objects.back()->Transform.Translation = {2, 0, 0};
+
+    scene.Objects.push_back(std::make_shared<Object>());
+    scene.Objects.back()->Transform.Translation = {0, 2, 0};
+  }
+
   CameraState mainCamera{
       .Camera{
           .Transform{
-              .Translation{0, 0, 3},
+              .Translation{0, 1, 10},
           },
+          .GazeDistance = 10,
       },
       .ClearColor{0.1f, 0.2f, 0.1f, 1.0f},
   };
   CameraState debugCamera{
       .Camera{
           .Transform{
-              .Translation{0, 0, 3},
+              .Translation{0, 1, 20},
           },
+          .GazeDistance = 20,
       },
       .ClearColor{0.3f, 0.3f, 0.3f, 1.0f},
   };
@@ -53,10 +68,48 @@ int main(int, char **) {
   io.IniFilename = NULL;
   EMSCRIPTEN_MAINLOOP_BEGIN
 #else
+
   while (platform.BeginFrame())
 #endif
   {
-    platform.UpdateGui(mainCamera.ClearColor);
+    platform.UpdateGui();
+
+    static ImVec2 lastMouse = io.MousePos;
+
+    ImGui::Begin("Scene");
+    {
+      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+      ImGui::ColorEdit3("clear color", mainCamera.ClearColor);
+
+      // camera
+      ImGui::Separator();
+      ImGui::TextUnformatted("[camera]");
+      ImGui::InputFloat3("camera pos",
+                         &mainCamera.Camera.Transform.Translation.x);
+
+      // scene
+      ImGui::Separator();
+      ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+      if (ImGui::TreeNode("[objects]")) {
+        int clicked = 0;
+        for (int i = 0; i < scene.Objects.size(); ++i) {
+          auto &o = scene.Objects[i];
+          char buf[256];
+          snprintf(buf, std::size(buf), "%d", i);
+          if (ImGui::Selectable(buf, o == scene.Selected)) {
+            ++clicked;
+            scene.Selected = o;
+          }
+        }
+        if (ImGui::IsMouseClicked(0) && clicked == 0) {
+          scene.Selected = {};
+        }
+        ImGui::TreePop();
+      }
+    }
+    ImGui::End();
 
     //
     // render to renderTarget
@@ -96,8 +149,9 @@ int main(int, char **) {
           state.MouseWheel = io.MouseWheel;
         }
 
-        scene.Render(io.DisplaySize.x, io.DisplaySize.y, debugCamera.Camera,
-                     state, ImGui::GetWindowDrawList(), &mainCamera.Camera);
+        debugCamera.Renderer.Render(debugCamera.Camera, state,
+                                    ImGui::GetWindowDrawList(), &scene,
+                                    &mainCamera.Camera);
 
         renderTarget->End();
       }
@@ -135,10 +189,11 @@ int main(int, char **) {
                    mainCamera.ClearColor[3]);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      scene.Render(io.DisplaySize.x, io.DisplaySize.y, mainCamera.Camera, state,
-                   ImGui::GetBackgroundDrawList());
+      mainCamera.Renderer.Render(mainCamera.Camera, state,
+                                 ImGui::GetBackgroundDrawList(), &scene);
     }
 
+    lastMouse = io.MousePos;
     platform.EndFrame();
   }
 #ifdef __EMSCRIPTEN__

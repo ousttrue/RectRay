@@ -253,7 +253,7 @@ struct Camera {
   }
 
   void Shift(int dx, int dy) {
-    auto factor = std::tan(Projection.FovY * 0.5f) * 2.0f * GazeDistance /
+    auto factor = std::tan(Projection.FovY * 0.5f) * GazeDistance /
                   Projection.Viewport.Height;
 
     auto _m = DirectX::XMMatrixRotationQuaternion(
@@ -311,6 +311,7 @@ struct Camera {
             static_cast<int>(mouse.MouseDeltaY));
     }
     Dolly(static_cast<int>(mouse.MouseWheel));
+    Update();
   }
 
   void Update() {

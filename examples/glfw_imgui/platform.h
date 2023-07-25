@@ -10,6 +10,6 @@ public:
   ~Platform();
   bool CreateWindow();
   bool BeginFrame();
-  void UpdateGui(float clear_color[4]);
+  void UpdateGui();
   void EndFrame();
 };

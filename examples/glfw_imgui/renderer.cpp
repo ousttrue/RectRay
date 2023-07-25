@@ -1,6 +1,7 @@
-#include "scene.h"
+#include "renderer.h"
 #include "gl_api.h"
 #include "plane.h"
+#include "scene.h"
 #include "triangle.h"
 #include <assert.h>
 #include <list>
@@ -10,36 +11,12 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 
-struct Object {
-  DirectX::XMFLOAT3 Shape{1, 1, 1};
-  rectray::EuclideanTransform Transform;
-
-  DirectX::XMMATRIX Matrix() const {
-    return DirectX::XMMatrixMultiply(
-        DirectX::XMMatrixScaling(Shape.x, Shape.y, Shape.z),
-        Transform.Matrix());
-  }
-
-  bool SetMatrix(const DirectX::XMMATRIX m) {
-    DirectX::XMVECTOR s;
-    DirectX::XMVECTOR r;
-    DirectX::XMVECTOR t;
-    if (!DirectX::XMMatrixDecompose(&s, &r, &t, m)) {
-      return false;
-    }
-    DirectX::XMStoreFloat3((DirectX::XMFLOAT3 *)&Shape, s);
-    DirectX::XMStoreFloat4((DirectX::XMFLOAT4 *)&Transform.Rotation, r);
-    DirectX::XMStoreFloat3((DirectX::XMFLOAT3 *)&Transform.Translation, t);
-    return true;
-  }
-};
-
 struct ImGuiVisitor {
   ImDrawList *m_drawlist;
   const rectray::marker::Command &m_command;
   ImVec2 m_offset;
 
-  inline const ImVec2 &IM(const DirectX::XMFLOAT2 &p) {
+  inline const ImVec2 IM(const DirectX::XMFLOAT2 &p) {
     return m_offset + *((const ImVec2 *)&p);
   };
 
@@ -84,56 +61,51 @@ struct ImGuiVisitor {
                         shape.Label.data() + shape.Label.size());
   }
 };
-struct SceneImpl {
+struct RendererImpl {
   Plane m_plane;
-  Triangle m_triangle;
+  // Triangle m_triangle;
 
   rectray::Screen m_screen;
-  std::list<std::shared_ptr<Object>> m_objects;
-  std::shared_ptr<Object> m_selected;
 
 public:
-  SceneImpl() {
-    m_objects.push_back(std::make_shared<Object>());
-    m_objects.back()->Transform.Translation = {};
+  RendererImpl() {}
 
-    m_objects.push_back(std::make_shared<Object>());
-    m_objects.back()->Transform.Translation = {2, 0, 0};
-
-    m_objects.push_back(std::make_shared<Object>());
-    m_objects.back()->Transform.Translation = {0, 2, 0};
-  }
-
-  void Render(float width, float height, rectray::Camera &camera,
-              const rectray::WindowMouseState &mouse, ImDrawList *imDrawList,
+  void Render(rectray::Camera &camera, const rectray::WindowMouseState &mouse,
+              ImDrawList *imDrawList, Scene *scene,
               rectray::Camera *otherCamera) {
-    camera.Projection.SetSize(width, height);
-    camera.MouseInputTurntable(mouse);
+    // only ViewportX update
+    camera.Projection.SetRect(mouse.ViewportX, mouse.ViewportY,
+                              mouse.ViewportWidth, mouse.ViewportHeight);
     camera.Update();
 
     m_screen.Begin(camera, mouse);
 
-    for (auto &o : m_objects) {
+    for (auto &o : scene->Objects) {
       auto m = o->Matrix();
       m_screen.Cube(m);
-      if (o == m_selected) {
+      if (o == scene->Selected) {
         m_screen.Translate(o.get(), rectray::Space::Local, m);
       }
     }
 
     auto result = m_screen.End();
     if (result.Selected) {
-      for (auto &o : m_objects) {
+      for (auto &o : scene->Objects) {
         if (o.get() == result.Selected) {
-          m_selected = o;
+          scene->Selected = o;
           if (result.Updated) {
-            m_selected->SetMatrix(DirectX::XMLoadFloat4x4(&*result.Updated));
+            scene->Selected->SetMatrix(
+                DirectX::XMLoadFloat4x4(&*result.Updated));
           }
           break;
         }
       }
     } else {
-      m_selected = nullptr;
+      // scene->Selected = nullptr;
+    }
+    if (!result.Updated) {
+      // if no manipulation. camera update
+      camera.MouseInputTurntable(mouse);
     }
 
     auto drawlist = m_screen.DrawList();
@@ -144,18 +116,19 @@ public:
           c.Shape);
     }
 
-    m_triangle.Render(camera);
     m_plane.Render(camera);
   }
 };
 
-Scene::Scene() : m_impl(new SceneImpl) { assert(glGetError() == GL_NO_ERROR); }
+Renderer::Renderer() : m_impl(new RendererImpl) {
+  assert(glGetError() == GL_NO_ERROR);
+}
 
-Scene::~Scene() { delete m_impl; }
+Renderer::~Renderer() { delete m_impl; }
 
-void Scene::Render(float width, float height, rectray::Camera &camera,
-                   const rectray::WindowMouseState &mouse,
-                   ImDrawList *imDrawList, rectray::Camera *otherCamera) {
-
-  m_impl->Render(width, height, camera, mouse, imDrawList, otherCamera);
+void Renderer::Render(rectray::Camera &camera,
+                      const rectray::WindowMouseState &mouse,
+                      struct ImDrawList *imDrawList, struct Scene *scene,
+                      rectray::Camera *otherCamera) {
+  m_impl->Render(camera, mouse, imDrawList, scene, otherCamera);
 }

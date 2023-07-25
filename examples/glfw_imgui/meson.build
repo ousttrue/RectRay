@@ -21,7 +21,7 @@ executable(
     [
         'main.cpp',
         'platform.cpp',
-        'scene.cpp',
+        'renderer.cpp',
         'triangle.cpp',
         'plane.cpp',
     ],
