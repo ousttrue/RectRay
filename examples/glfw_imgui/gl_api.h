@@ -15,13 +15,13 @@
 // #if defined(IMGUI_IMPL_OPENGL_ES2)
 // #include <GLES2/gl2.h>
 // #include <GLES2/gl2ext.h>
+// #define glBindVertexArray glBindVertexArrayOES
+// #define glGenVertexArrays glGenVertexArraysOES
+// #define glDeleteVertexArrays glDeleteVertexArraysOES
 // #elif defined(IMGUI_IMPL_OPENGL_ES3)
-#include <GLES3/gl3.h>
+#include <GLES3/gl32.h>
 // #include <GLES3/gl3ext.h>
 // #endif
-#define glBindVertexArray glBindVertexArrayOES
-#define glGenVertexArrays glGenVertexArraysOES
-#define glDeleteVertexArrays glDeleteVertexArraysOES
 inline const char *SHADER_HEADER = "#version 300 es\nprecision highp float;\n";
 
 #else
