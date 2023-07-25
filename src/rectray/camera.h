@@ -27,9 +27,13 @@ inline DirectX::XMFLOAT2 operator-(const DirectX::XMFLOAT2 &l,
 inline DirectX::XMFLOAT2 operator*(const DirectX::XMFLOAT2 &l, float f) {
   return DirectX::XMFLOAT2{l.x * f, l.y * f};
 }
-inline float Length(const DirectX::XMFLOAT2 &v) {
-  return sqrt(v.x * v.x + v.y * v.y);
+inline DirectX::XMFLOAT2 operator/(const DirectX::XMFLOAT2 &l, float f) {
+  return l * (1.0f / f);
 }
+inline float Dot(const DirectX::XMFLOAT2 &l, const DirectX::XMFLOAT2 &r) {
+  return l.x * r.x + l.y * r.y;
+}
+inline float Length(const DirectX::XMFLOAT2 &v) { return sqrt(Dot(v, v)); }
 inline DirectX::XMFLOAT2 Normalized(const DirectX::XMFLOAT2 &v) {
   auto f = 1.0f / Length(v);
   return {v.x * f, v.y * f};
@@ -206,7 +210,7 @@ struct ScreenState {
   float MouseWheel = 0;
 
   bool InViewport() const {
-    if (MouseX < ViewportX) {
+    if (MouseX < 0) {
       return false;
     }
     if (MouseX > ViewportWidth) {
@@ -228,6 +232,27 @@ struct ScreenState {
         x * ViewportWidth,
         y * ViewportHeight,
     };
+  }
+
+  std::optional<DirectX::XMFLOAT2> Intersect(const DirectX::XMFLOAT2 &a,
+                                             const DirectX::XMFLOAT2 &b,
+                                             uint32_t pixel) {
+    DirectX::XMFLOAT2 p{MouseX, MouseY};
+    auto d = Dot(p - b, a - b);
+    if (d < 0) {
+      return {};
+    }
+    auto ab = Normalized(b - a);
+    d = Dot(p - a, ab);
+    if (d < 0) {
+      return {};
+    }
+    auto x = a + ab * d;
+    auto len = Length(p - x);
+    if (len > pixel) {
+      return {};
+    }
+    return x;
   }
 };
 
@@ -420,10 +445,9 @@ struct Camera {
 
     auto t = tan(Projection.FovY / 2);
     auto h = mouse.ViewportHeight / 2;
-    auto y = t * (h - (mouse.MouseY - mouse.ViewportY)) / h;
+    auto y = t * (h - mouse.MouseY) / h;
     auto w = mouse.ViewportWidth / 2;
-    auto x =
-        t * Projection.AspectRatio * ((mouse.MouseX - mouse.ViewportX) - w) / w;
+    auto x = t * Projection.AspectRatio * (mouse.MouseX - w) / w;
 
     auto q = DirectX::XMLoadFloat4(&Transform.Rotation);
     DirectX::XMStoreFloat3(&ret.Direction,
@@ -438,97 +462,5 @@ struct Camera {
     return ret;
   }
 };
-
-inline std::optional<float> Intersects(const Ray &ray, DirectX::XMMATRIX m) {
-  //   7+-+6
-  //   / /|
-  // 3+-+2 +5
-  // | |
-  // 0+-+1
-  DirectX::XMFLOAT3 p[8] = {
-      {-0.5f, -0.5f, +0.5f}, //
-      {+0.5f, -0.5f, +0.5f}, //
-      {+0.5f, +0.5f, +0.5f}, //
-      {-0.5f, +0.5f, +0.5f}, //
-      {-0.5f, -0.5f, -0.5f}, //
-      {+0.5f, -0.5f, -0.5f}, //
-      {+0.5f, +0.5f, -0.5f}, //
-      {-0.5f, +0.5f, -0.5f}, //
-  };
-  for (int i = 0; i < 8; ++i) {
-    DirectX::XMStoreFloat3(
-        &p[i], DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&p[i]), m));
-  }
-
-  static const std::array<int, 4> triangles[] = {
-      {1, 5, 6, 2}, // x+
-      {3, 2, 6, 7}, // y+
-      {0, 1, 2, 3}, // z+
-      {4, 7, 3, 0}, // x-
-      {1, 0, 4, 5}, // y-
-      {5, 6, 7, 4}, // z-
-  };
-
-  auto origin = DirectX::XMLoadFloat3(&ray.Origin);
-  auto direction = DirectX::XMLoadFloat3(&ray.Direction);
-
-  float closest = std::numeric_limits<float>::infinity();
-  for (int t = 0; t < 6; ++t) {
-    auto [i0, i1, i2, i3] = triangles[t];
-    float dist;
-    if (DirectX::TriangleTests::Intersects(origin, direction,
-                                           DirectX::XMLoadFloat3(&p[i0]), //
-                                           DirectX::XMLoadFloat3(&p[i1]), //
-                                           DirectX::XMLoadFloat3(&p[i2]), //
-                                           dist)) {
-      if (dist < closest) {
-        closest = dist;
-      }
-    } else if (DirectX::TriangleTests::Intersects(
-                   origin, direction,             //
-                   DirectX::XMLoadFloat3(&p[i2]), //
-                   DirectX::XMLoadFloat3(&p[i3]), //
-                   DirectX::XMLoadFloat3(&p[i0]), //
-                   dist)) {
-      if (dist < closest) {
-        closest = dist;
-      }
-    }
-  }
-  if (std::isfinite(closest)) {
-    return closest;
-  } else {
-    return std::nullopt;
-  }
-}
-
-inline std::optional<float> LessDistance(const Ray &ray,
-                                         const DirectX::XMFLOAT3 &q0,
-                                         const DirectX::XMFLOAT3 &q1,
-                                         float distance) {
-
-  auto &p0 = ray.Origin;
-  auto &pv = ray.Direction;
-  auto qv = Normalized(q1 - q0);
-
-  auto pv2 = Dot(pv, pv);
-  auto qv2 = Dot(qv, qv);
-  auto vpq = Dot(pv, qv);
-
-  auto dot0 = Dot((q0 - p0), pv);
-  auto dot1 = Dot((p0 - q0), qv);
-
-  auto f = 1 / (pv2 * qv2 - vpq * vpq);
-  auto s = f * qv2 * dot0 + vpq * dot1;
-  auto t = f * vpq * dot0 + pv2 * dot1;
-
-  auto c0 = p0 + pv * s;
-  auto c1 = q0 + qv * t;
-  auto d = Length(c0 - c1);
-  if (d > distance) {
-    return {};
-  }
-  return s;
-}
 
 } // namespace rectray

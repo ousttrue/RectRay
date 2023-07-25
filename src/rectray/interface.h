@@ -1,5 +1,6 @@
 #pragma once
 #include "camera.h"
+#include "context.h"
 #include "drawlist.h"
 #include <DirectXMath.h>
 #include <optional>
@@ -20,17 +21,6 @@ struct Result {
   std::optional<DirectX::XMFLOAT4X4> Updated;
 };
 
-struct Context {
-  Camera Camera;
-  ScreenState Mouse;
-  std::optional<Ray> Ray;
-
-  float PixelToLength(uint32_t pixel, const DirectX::XMFLOAT3 &world) {
-    // TODO:
-    return 0.1f;
-  }
-};
-
 class Interface {
   DrawList m_drawlist;
 
@@ -39,10 +29,7 @@ public:
   void Begin(const Camera &camera, const ScreenState &mouse) {
     m_drawlist.Clear();
 
-    m_context = Context{camera, mouse};
-    if (mouse.Focus != ScreenFocus::None) {
-      m_context.Ray = camera.GetRay(mouse);
-    }
+    m_context = Context(camera, mouse);
   }
   Result End() {
     auto closest = std::numeric_limits<float>::infinity();
@@ -71,21 +58,12 @@ public:
         s,
         e,
     };
-
-    std::optional<float> hit;
-    if (m_context.Ray) {
-      hit = LessDistance(*m_context.Ray, s, e, m_context.PixelToLength(4, s));
-    }
+    auto hit = m_context.Intersects(s, e, 4);
     m_drawlist.Gizmos.push_back({allow, color, nullptr, hit});
   }
 
   void Cube(void *handle, DirectX::XMMATRIX m) {
-    std::optional<float> hit;
-    if (m_context.Ray) {
-      hit = Intersects(*m_context.Ray, m);
-    }
-
-    // ABGR
+    auto hit = m_context.Intersects(m);
     gizmo::Cube cube;
     DirectX::XMStoreFloat4x4(&cube.Matrix, m);
     m_drawlist.Gizmos.push_back(
