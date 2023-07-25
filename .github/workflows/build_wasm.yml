@@ -17,9 +17,9 @@ jobs:
         run: python -V
       - name: Install dependencies
         run: pip install meson ninja
-      - uses: lovasoa/setup-emscripten@master
-        with:
-          emscripten-version: "1.38.47"
+      - uses: mymindstorm/setup-emsdk@v11
+      - name: Verify
+        run: emcc -v
       - name: build wasm
         run: |
           meson setup build --cross-file wasm.ini -Dcpp_std=c++20
