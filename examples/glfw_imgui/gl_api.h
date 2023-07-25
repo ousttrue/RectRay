@@ -10,15 +10,15 @@
 
 #ifdef __EMSCRIPTEN__
 #define GL_GLEXT_PROTOTYPES
-#include <imgui_impl_opengl3.h>
 #define GL_SILENCE_DEPRECATION
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#elif defined(IMGUI_IMPL_OPENGL_ES3)
+// #include <imgui_impl_opengl3.h>
+// #if defined(IMGUI_IMPL_OPENGL_ES2)
+// #include <GLES2/gl2.h>
+// #include <GLES2/gl2ext.h>
+// #elif defined(IMGUI_IMPL_OPENGL_ES3)
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
-#endif
+// #endif
 #define glBindVertexArray glBindVertexArrayOES
 #define glGenVertexArrays glGenVertexArraysOES
 #define glDeleteVertexArrays glDeleteVertexArraysOES
