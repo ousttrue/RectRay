@@ -48,9 +48,9 @@ void main()
     static const struct {
       float x, y;
       float r, g, b;
-    } vertices[3] = {{-0.6f, -0.4f, 1.f, 0.f, 0.f},
-                     {0.6f, -0.4f, 0.f, 1.f, 0.f},
-                     {0.f, 0.6f, 0.f, 0.f, 1.f}};
+    } vertices[3] = {{-0.5f, -0.5f, 1.f, 0.f, 0.f},
+                     {0.5f, -0.5f, 0.f, 1.f, 0.f},
+                     {0.f, 0.5f, 0.f, 0.f, 1.f}};
     auto vbo = gl::Vbo::Create(vertices);
     assert(glGetError() == GL_NO_ERROR);
 

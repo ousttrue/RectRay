@@ -3,6 +3,7 @@
 namespace rectray {
 struct WindowMouseState;
 struct Camera;
+class Screen;
 } // namespace rectray
 
 class Renderer {
@@ -11,7 +12,8 @@ class Renderer {
 public:
   Renderer();
   ~Renderer();
-  void Render(rectray::Camera &camera, const rectray::WindowMouseState &mouse,
+  void Render(rectray::Screen &screen, rectray::Camera &camera,
+              const rectray::WindowMouseState &mouse,
               struct ImDrawList *ImDrawList, struct Scene *scene,
-              rectray::Camera *otherCamera = nullptr);
+              rectray::Screen *other = nullptr);
 };

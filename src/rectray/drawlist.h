@@ -170,7 +170,7 @@ struct DrawList {
             {ToScreenW(p3.x / p3.w), ToScreenH(p3.y / p3.w)},
         };
         points[4] = points[0];
-        Self->AddPolyline(points, 5, -1, 0, 1);
+        Self->AddPolyline(points, 5, Color, 0, 1);
       }
     };
 

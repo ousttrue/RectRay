@@ -3,11 +3,13 @@
 #ifdef __EMSCRIPTEN__
 #define _XM_NO_INTRINSICS_
 #endif
+#include <DirectXCollision.h>
 #include <DirectXMath.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <iostream>
 #include <numbers>
 #include <stdio.h>
 #include <vector>
@@ -34,11 +36,12 @@ struct Projection {
 
   void Update(DirectX::XMFLOAT4X4 *projection) {
     auto aspectRatio = Viewport.AspectRatio();
-    // DirectX::XMStoreFloat4x4(projection, DirectX::XMMatrixPerspectiveFovRH(
-    //                                          FovY, aspectRatio, NearZ,
-    //                                          FarZ));
-
-    float cot = 1 / tan(FovY * 0.5);
+#if 1
+    DirectX::XMStoreFloat4x4(projection, DirectX::XMMatrixPerspectiveFovRH(
+                                             FovY, aspectRatio, NearZ,
+                                             FarZ));
+#else
+    float cot = 1 / tan(FovY);
     float a = aspectRatio;
     float f = FarZ;
     float n = NearZ;
@@ -64,6 +67,7 @@ struct Projection {
         -2 * f * n / (f - n),
         0,
     };
+#endif
   }
 
   void SetViewport(const struct Viewport &viewport) { Viewport = viewport; }
@@ -253,7 +257,7 @@ struct Camera {
   }
 
   void Shift(int dx, int dy) {
-    auto factor = std::tan(Projection.FovY * 0.5f) * GazeDistance /
+    auto factor = std::tan(Projection.FovY * 0.5f) * 2.0f * GazeDistance /
                   Projection.Viewport.Height;
 
     auto _m = DirectX::XMMatrixRotationQuaternion(
@@ -362,9 +366,12 @@ struct Camera {
     auto x = t * Projection.Viewport.AspectRatio() * (PixelFromLeft - w) / w;
 
     auto q = DirectX::XMLoadFloat4(&Transform.Rotation);
-    DirectX::XMStoreFloat3(&ret.Direction,
-                           DirectX::XMVector3Normalize(DirectX::XMVector3Rotate(
-                               DirectX::XMVectorSet(x, y, -1, 0), q)));
+    DirectX::XMStoreFloat3(
+        &ret.Direction,
+        DirectX::XMVector3Rotate(
+            DirectX::XMVector3Normalize(DirectX::XMVectorSet(x, y, -1, 0)), q));
+
+    // std::cout << x << "," << y << std::endl;
 
     if (!ret.IsValid()) {
       return std::nullopt;
@@ -372,9 +379,68 @@ struct Camera {
     return ret;
   }
 
-  std::optional<Ray> GetRay(const WindowMouseState &mouse) const {
-    return GetRay(mouse.MouseX, mouse.MouseY);
-  }
+  // std::optional<Ray> GetRay(const WindowMouseState &mouse) const {
+  //   return GetRay(mouse.MouseX, mouse.MouseY);
+  // }
 };
+
+inline std::optional<float> Intersects(const Ray &ray, DirectX::XMMATRIX m) {
+  //   7+-+6
+  //   / /|
+  // 3+-+2 +5
+  // | |
+  // 0+-+1
+  DirectX::XMFLOAT3 p[8] = {
+      {-0.5f, -0.5f, +0.5f}, //
+      {+0.5f, -0.5f, +0.5f}, //
+      {+0.5f, +0.5f, +0.5f}, //
+      {-0.5f, +0.5f, +0.5f}, //
+      {-0.5f, -0.5f, -0.5f}, //
+      {+0.5f, -0.5f, -0.5f}, //
+      {+0.5f, +0.5f, -0.5f}, //
+      {-0.5f, +0.5f, -0.5f}, //
+  };
+  for (int i = 0; i < 8; ++i) {
+    DirectX::XMStoreFloat3(
+        &p[i], DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&p[i]), m));
+  }
+
+  static const std::array<int, 4> triangles[] = {
+      {1, 5, 6, 2}, // x+
+      {3, 2, 6, 7}, // y+
+      {0, 1, 2, 3}, // z+
+      {4, 7, 3, 0}, // x-
+      {1, 0, 4, 5}, // y-
+      {5, 6, 7, 4}, // z-
+  };
+
+  auto origin = DirectX::XMLoadFloat3(&ray.Origin);
+  auto direction = DirectX::XMLoadFloat3(&ray.Direction);
+
+  float closest = std::numeric_limits<float>::infinity();
+  for (int t = 0; t < 6; ++t) {
+    auto [i0, i1, i2, i3] = triangles[t];
+    float dist;
+    if (DirectX::TriangleTests::Intersects(origin, direction,
+                                           DirectX::XMLoadFloat3(&p[i0]), //
+                                           DirectX::XMLoadFloat3(&p[i1]), //
+                                           DirectX::XMLoadFloat3(&p[i2]), //
+                                           dist)) {
+      closest = std::min(dist, closest);
+    } else if (DirectX::TriangleTests::Intersects(
+                   origin, direction,             //
+                   DirectX::XMLoadFloat3(&p[i2]), //
+                   DirectX::XMLoadFloat3(&p[i3]), //
+                   DirectX::XMLoadFloat3(&p[i0]), //
+                   dist)) {
+      closest = std::min(dist, closest);
+    }
+  }
+  if (std::isfinite(closest)) {
+    return closest;
+  } else {
+    return std::nullopt;
+  }
+}
 
 } // namespace rectray

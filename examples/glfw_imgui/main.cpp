@@ -15,6 +15,7 @@
 
 struct CameraState {
   rectray::Camera Camera;
+  rectray::Screen Screen;
   float ClearColor[4];
   Renderer Renderer;
 };
@@ -149,9 +150,9 @@ int main(int, char **) {
           state.MouseWheel = io.MouseWheel;
         }
 
-        debugCamera.Renderer.Render(debugCamera.Camera, state,
-                                    ImGui::GetWindowDrawList(), &scene,
-                                    &mainCamera.Camera);
+        debugCamera.Renderer.Render(debugCamera.Screen, debugCamera.Camera,
+                                    state, ImGui::GetWindowDrawList(), &scene,
+                                    &mainCamera.Screen);
 
         renderTarget->End();
       }
@@ -189,8 +190,9 @@ int main(int, char **) {
                    mainCamera.ClearColor[3]);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      mainCamera.Renderer.Render(mainCamera.Camera, state,
-                                 ImGui::GetBackgroundDrawList(), &scene);
+      mainCamera.Renderer.Render(mainCamera.Screen, mainCamera.Camera, state,
+                                 ImGui::GetBackgroundDrawList(), &scene,
+                                 &debugCamera.Screen);
     }
 
     lastMouse = io.MousePos;

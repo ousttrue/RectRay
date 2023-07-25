@@ -63,32 +63,30 @@ struct ImGuiVisitor {
 };
 struct RendererImpl {
   Plane m_plane;
-  // Triangle m_triangle;
-
-  rectray::Screen m_screen;
+  Triangle m_triangle;
 
 public:
   RendererImpl() {}
 
-  void Render(rectray::Camera &camera, const rectray::WindowMouseState &mouse,
-              ImDrawList *imDrawList, Scene *scene,
-              rectray::Camera *otherCamera) {
+  void Render(rectray::Screen &screen, rectray::Camera &camera,
+              const rectray::WindowMouseState &mouse, ImDrawList *imDrawList,
+              Scene *scene, rectray::Screen *other) {
     // only ViewportX update
     camera.Projection.SetRect(mouse.ViewportX, mouse.ViewportY,
                               mouse.ViewportWidth, mouse.ViewportHeight);
     camera.Update();
 
-    m_screen.Begin(camera, mouse);
+    screen.Begin(camera, mouse);
 
     for (auto &o : scene->Objects) {
       auto m = o->Matrix();
-      m_screen.Cube(m);
+      screen.Cube(m);
       if (o == scene->Selected) {
-        m_screen.Translate(o.get(), rectray::Space::Local, m);
+        screen.Translate(o.get(), rectray::Space::Local, m);
       }
     }
 
-    auto result = m_screen.End();
+    auto result = screen.End();
     if (result.Selected) {
       for (auto &o : scene->Objects) {
         if (o.get() == result.Selected) {
@@ -108,7 +106,7 @@ public:
       camera.MouseInputTurntable(mouse);
     }
 
-    auto drawlist = m_screen.DrawList();
+    auto drawlist = screen.DrawList();
     drawlist.GizmoToMarker(camera);
     for (auto &c : drawlist.Markers) {
       std::visit(
@@ -116,6 +114,7 @@ public:
           c.Shape);
     }
 
+    m_triangle.Render(camera);
     m_plane.Render(camera);
   }
 };
@@ -126,9 +125,9 @@ Renderer::Renderer() : m_impl(new RendererImpl) {
 
 Renderer::~Renderer() { delete m_impl; }
 
-void Renderer::Render(rectray::Camera &camera,
+void Renderer::Render(rectray::Screen &screen, rectray::Camera &camera,
                       const rectray::WindowMouseState &mouse,
                       struct ImDrawList *imDrawList, struct Scene *scene,
-                      rectray::Camera *otherCamera) {
-  m_impl->Render(camera, mouse, imDrawList, scene, otherCamera);
+                      rectray::Screen *other) {
+  m_impl->Render(screen, camera, mouse, imDrawList, scene, other);
 }
