@@ -30,7 +30,7 @@ jobs:
           meson setup build --cross-file wasm.ini -Dcpp_std=c++2b
           meson compile -C build
           mkdir public
-          cp build/examples/glfw_imgui/rectray_glfw_imgui.* public/
+          cp build/examples/glfw_imgui/rectray_glfw_imgui.{wasm,js,html} public/
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
         with:
