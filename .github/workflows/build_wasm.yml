@@ -10,11 +10,13 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      - name: Verify python
+        run: python3 -V
       - uses: actions/checkout@v2
       - name: Install dependencies
         run: pip install meson ninja
       - name: Verify meson
-        run: which meson 
+        run: which meson
       - name: patch meson
         run: patch -u .local/lib/python3.10/site-packages/mesonbuild/compilers/cpp.py < meson.patch
       - uses: mymindstorm/setup-emsdk@v11
