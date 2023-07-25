@@ -11,7 +11,7 @@ if compiler.get_id() == 'emscripten'
         '-sUSE_GLFW=3',
         '-sUSE_WEBGL2=1',
         '-sFULL_ES3=1',
-        '-sLEGACY_GL_EMULATION=1',
+        # '-sLEGACY_GL_EMULATION=1',
     ]
     suffix = 'html'
 else
