@@ -68,29 +68,29 @@ struct RendererImpl {
 public:
   RendererImpl() {}
 
-  void Render(rectray::Interface &interface, rectray::Camera &camera,
-              const rectray::ScreenState &mouse, ImDrawList *imDrawList,
-              Scene *scene, const rectray::Interface *other) {
+  void Render(rectray::Gui &gui, rectray::Camera &camera,
+              const rectray::ViewportState &viewport, ImDrawList *imDrawList,
+              Scene *scene, const rectray::Gui *other) {
     // only ViewportX update
-    camera.Projection.SetAspectRatio(mouse.ViewportWidth, mouse.ViewportHeight);
+    camera.Projection.SetAspectRatio(viewport.ViewportWidth, viewport.ViewportHeight);
     camera.Update();
 
-    interface.Begin(camera, mouse);
+    gui.Begin(camera, viewport);
 
     for (auto &o : scene->Objects) {
       auto m = o->Matrix();
-      interface.Cube(o.get(), m);
+      gui.Cube(o.get(), m);
       if (o == scene->Selected) {
-        // interface.Translate(o.get(), rectray::Space::Local, m);
+        // gui.Translate(o.get(), rectray::Space::Local, m);
         auto s = o->Transform.Translation;
-        interface.Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF);
-        interface.Arrow(s, {s.x, s.y + 1, s.z}, 0xFF00FF00);
-        interface.Arrow(s, {s.x, s.y, s.z + 1}, 0xFFFF0000);
+        gui.Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF);
+        gui.Arrow(s, {s.x, s.y + 1, s.z}, 0xFF00FF00);
+        gui.Arrow(s, {s.x, s.y, s.z + 1}, 0xFFFF0000);
       }
     }
 
-    auto result = interface.End();
-    if (mouse.MouseLeftDown) {
+    auto result = gui.End();
+    if (viewport.MouseLeftDown) {
       for (auto &o : scene->Objects) {
         if (o.get() == result.Closest) {
           scene->Selected = o;
@@ -102,24 +102,24 @@ public:
     }
     if (!result.Updated) {
       // if no manipulation. camera update
-      camera.MouseInputTurntable(mouse);
+      camera.MouseInputTurntable(viewport);
     }
 
     if (other) {
       auto &otherCamera = other->m_context.Camera;
-      interface.Frustum(otherCamera.ViewProjection(),
+      gui.Frustum(otherCamera.ViewProjection(),
                         otherCamera.Projection.NearZ,
                         otherCamera.Projection.FarZ);
       if (auto ray = other->m_context.Ray) {
-        interface.Ray(*ray, otherCamera.Projection.FarZ);
+        gui.Ray(*ray, otherCamera.Projection.FarZ);
       }
     }
 
-    auto drawlist = interface.DrawList();
-    drawlist.ToMarker(camera, mouse);
+    auto drawlist = gui.DrawList();
+    drawlist.ToMarker(camera, viewport);
     for (auto &c : drawlist.Markers) {
       std::visit(
-          ImGuiVisitor{imDrawList, c, {mouse.ViewportX, mouse.ViewportY}},
+          ImGuiVisitor{imDrawList, c, {viewport.ViewportX, viewport.ViewportY}},
           c.Shape);
     }
 
@@ -134,9 +134,9 @@ Renderer::Renderer() : m_impl(new RendererImpl) {
 
 Renderer::~Renderer() { delete m_impl; }
 
-void Renderer::Render(rectray::Interface &interface, rectray::Camera &camera,
-                      const rectray::ScreenState &mouse,
+void Renderer::Render(rectray::Gui &gui, rectray::Camera &camera,
+                      const rectray::ViewportState &viewport,
                       struct ImDrawList *imDrawList, struct Scene *scene,
-                      const rectray::Interface *other) {
-  m_impl->Render(interface, camera, mouse, imDrawList, scene, other);
+                      const rectray::Gui *other) {
+  m_impl->Render(gui, camera, viewport, imDrawList, scene, other);
 }

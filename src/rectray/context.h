@@ -6,15 +6,15 @@ namespace rectray {
 
 struct Context {
   Camera Camera;
-  ScreenState Screen;
+  ViewportState Viewport;
   std::optional<Ray> Ray;
 
   Context() {}
 
-  Context(const struct Camera &camera, const ScreenState &screen)
-      : Camera(camera), Screen(screen) {
-    if (Screen.Focus != ScreenFocus::None) {
-      Ray = Camera.GetRay(Screen);
+  Context(const struct Camera &camera, const ViewportState &screen)
+      : Camera(camera), Viewport(screen) {
+    if (Viewport.Focus != ViewportFocus::None) {
+      Ray = Camera.GetRay(Viewport);
     }
   }
 
@@ -28,7 +28,7 @@ struct Context {
     DirectX::XMStoreFloat4(
         &p, DirectX::XMVector4Transform(DirectX::XMVectorSet(v.x, v.y, v.z, 1),
                                         Camera.ViewProjection()));
-    return Screen.ClipToScreen(p);
+    return Viewport.ClipToViewpor(p);
   }
 
   std::optional<float> Intersects(const DirectX::XMFLOAT3 &s,
@@ -39,7 +39,7 @@ struct Context {
     // return LessDistance(s, e, PixelToLength(pixel, s));
     auto c0 = WorldToScreen(s);
     auto c1 = WorldToScreen(e);
-    auto c = Screen.Intersect(c0, c1, pixel);
+    auto c = Viewport.Intersect(c0, c1, pixel);
     if (!c) {
       return {};
     }

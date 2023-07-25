@@ -21,15 +21,15 @@ struct Result {
   std::optional<DirectX::XMFLOAT4X4> Updated;
 };
 
-class Interface {
+class Gui {
   DrawList m_drawlist;
 
 public:
   Context m_context;
-  void Begin(const Camera &camera, const ScreenState &mouse) {
+  void Begin(const Camera &camera, const ViewportState &viewport) {
     m_drawlist.Clear();
 
-    m_context = Context(camera, mouse);
+    m_context = Context(camera, viewport);
   }
   Result End() {
     auto closest = std::numeric_limits<float>::infinity();

@@ -1,9 +1,9 @@
 #pragma once
 
 namespace rectray {
-struct ScreenState;
 struct Camera;
-class Interface;
+struct ViewportState;
+class Gui;
 } // namespace rectray
 
 class Renderer {
@@ -12,8 +12,8 @@ class Renderer {
 public:
   Renderer();
   ~Renderer();
-  void Render(rectray::Interface &interface, rectray::Camera &camera,
-              const rectray::ScreenState &mouse,
+  void Render(rectray::Gui &gui, rectray::Camera &camera,
+              const rectray::ViewportState &viewport,
               struct ImDrawList *ImDrawList, struct Scene *scene,
-              const rectray::Interface *other = nullptr);
+              const rectray::Gui *other = nullptr);
 };

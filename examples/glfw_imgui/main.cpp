@@ -13,10 +13,10 @@
 #include "examples/libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
-struct CameraState {
+struct ViewportGui {
   std::string Name;
   rectray::Camera Camera;
-  rectray::Interface Interface;
+  rectray::Gui Gui;
   float ClearColor[4];
   Renderer Renderer;
   void Show() {
@@ -35,7 +35,7 @@ struct CameraState {
       Camera.Projection.FarZ =
           std::max(Camera.Projection.FarZ, Camera.Projection.NearZ + 1);
 
-      if (auto ray = Interface.m_context.Ray) {
+      if (auto ray = Gui.m_context.Ray) {
         ImGui::BeginDisabled(false);
         ImGui::InputFloat3("ray dir", &ray->Direction.x);
       } else {
@@ -50,9 +50,9 @@ struct CameraState {
   }
   // ImGui::GetWindowDrawList()
   //&mainCamera.Screen
-  void Render(const rectray::ScreenState &state, ImDrawList *imDrawList,
-              Scene *scene, const rectray::Interface *other) {
-    Renderer.Render(Interface, Camera, state, imDrawList, scene, other);
+  void Render(const rectray::ViewportState &viewport, ImDrawList *imDrawList,
+              Scene *scene, const rectray::Gui *other) {
+    Renderer.Render(Gui, Camera, viewport, imDrawList, scene, other);
   }
 };
 
@@ -77,7 +77,7 @@ int main(int, char **) {
     scene.Objects.back()->Transform.Translation = {0, 2, 0};
   }
 
-  CameraState mainCamera{
+  ViewportGui mainCamera{
       .Name = "main camera",
       .Camera{
           .Projection{
@@ -91,7 +91,7 @@ int main(int, char **) {
       },
       .ClearColor{0.1f, 0.2f, 0.1f, 1.0f},
   };
-  CameraState debugCamera{
+  ViewportGui debugCamera{
       .Name = "debug camera",
       .Camera{
           .Projection{
@@ -168,14 +168,14 @@ int main(int, char **) {
                               ImGuiButtonFlags_MouseButtonMiddle |
                                   ImGuiButtonFlags_MouseButtonRight);
 
-        auto focus = rectray::ScreenFocus::None;
+        auto focus = rectray::ViewportFocus::None;
         if (ImGui::IsItemActive()) {
-          focus = rectray::ScreenFocus::Active;
+          focus = rectray::ViewportFocus::Active;
         } else if (ImGui::IsItemHovered()) {
-          focus = rectray::ScreenFocus::Hover;
+          focus = rectray::ViewportFocus::Hover;
         }
 
-        rectray::ScreenState state{
+        rectray::ViewportState viewport{
             .Focus = focus,
             .ViewportX = pos.x,
             .ViewportY = pos.y,
@@ -191,8 +191,8 @@ int main(int, char **) {
             .MouseWheel = io.MouseWheel,
         };
 
-        debugCamera.Render(state, ImGui::GetWindowDrawList(), &scene,
-                           &mainCamera.Interface);
+        debugCamera.Render(viewport, ImGui::GetWindowDrawList(), &scene,
+                           &mainCamera.Gui);
 
         renderTarget->End();
       }
@@ -203,12 +203,12 @@ int main(int, char **) {
     // render to background
     //
     {
-      auto focus = rectray::ScreenFocus::None;
+      auto focus = rectray::ViewportFocus::None;
       if (!io.WantCaptureMouse) {
-        focus = rectray::ScreenFocus::Active;
+        focus = rectray::ViewportFocus::Active;
       }
 
-      rectray::ScreenState state{
+      rectray::ViewportState viewport{
           .Focus = focus,
           .ViewportX = 0,
           .ViewportY = 0,
@@ -234,8 +234,8 @@ int main(int, char **) {
                    mainCamera.ClearColor[3]);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      mainCamera.Render(state, ImGui::GetBackgroundDrawList(), &scene,
-                        &debugCamera.Interface);
+      mainCamera.Render(viewport, ImGui::GetBackgroundDrawList(), &scene,
+                        &debugCamera.Gui);
     }
 
     lastMouse = io.MousePos;
