@@ -15,5 +15,5 @@ public:
   void Render(rectray::Screen &screen, rectray::Camera &camera,
               const rectray::WindowMouseState &mouse,
               struct ImDrawList *ImDrawList, struct Scene *scene,
-              rectray::Screen *other = nullptr);
+              rectray::Camera *other = nullptr);
 };

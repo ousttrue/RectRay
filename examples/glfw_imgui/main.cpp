@@ -43,6 +43,10 @@ int main(int, char **) {
 
   CameraState mainCamera{
       .Camera{
+          .Projection{
+              .NearZ = 1,
+              .FarZ = 100,
+          },
           .Transform{
               .Translation{0, 1, 10},
           },
@@ -52,6 +56,10 @@ int main(int, char **) {
   };
   CameraState debugCamera{
       .Camera{
+          .Projection{
+              .NearZ = 1,
+              .FarZ = 100,
+          },
           .Transform{
               .Translation{0, 1, 20},
           },
@@ -87,8 +95,16 @@ int main(int, char **) {
       // camera
       ImGui::Separator();
       ImGui::TextUnformatted("[camera]");
+      ImGui::DragFloat("camera near", &mainCamera.Camera.Projection.NearZ);
+      mainCamera.Camera.Projection.NearZ =
+          std::max(0.01f, std::min(mainCamera.Camera.Projection.NearZ,
+                                   mainCamera.Camera.Projection.FarZ - 1));
+      ImGui::DragFloat("camera far", &mainCamera.Camera.Projection.FarZ);
       ImGui::InputFloat3("camera pos",
                          &mainCamera.Camera.Transform.Translation.x);
+      mainCamera.Camera.Projection.FarZ =
+          std::max(mainCamera.Camera.Projection.FarZ,
+                   mainCamera.Camera.Projection.NearZ + 1);
 
       // scene
       ImGui::Separator();
@@ -152,7 +168,7 @@ int main(int, char **) {
 
         debugCamera.Renderer.Render(debugCamera.Screen, debugCamera.Camera,
                                     state, ImGui::GetWindowDrawList(), &scene,
-                                    &mainCamera.Screen);
+                                    &mainCamera.Camera);
 
         renderTarget->End();
       }
@@ -192,7 +208,7 @@ int main(int, char **) {
 
       mainCamera.Renderer.Render(mainCamera.Screen, mainCamera.Camera, state,
                                  ImGui::GetBackgroundDrawList(), &scene,
-                                 &debugCamera.Screen);
+                                 &debugCamera.Camera);
     }
 
     lastMouse = io.MousePos;

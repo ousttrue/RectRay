@@ -45,11 +45,12 @@ public:
     m_drawlist.Gizmos.push_back({cube, hover ? YELLOW : WHITE});
   }
 
-  void Frustum(const Camera &camera) {
+  void Frustum(DirectX::XMMATRIX ViewProjection, float zNear, float zFar) {
     gizmo::Frustum frustum{
-        .Transform = camera.Transform,
-
+        .Near = zNear,
+        .Far = zFar,
     };
+    DirectX::XMStoreFloat4x4(&frustum.ViewProjection, ViewProjection);
     auto WHITE = 0xFFFFFFFF;
     m_drawlist.Gizmos.push_back({frustum, WHITE});
   }

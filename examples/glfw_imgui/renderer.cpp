@@ -70,7 +70,7 @@ public:
 
   void Render(rectray::Screen &screen, rectray::Camera &camera,
               const rectray::WindowMouseState &mouse, ImDrawList *imDrawList,
-              Scene *scene, rectray::Screen *other) {
+              Scene *scene, rectray::Camera *other) {
     // only ViewportX update
     camera.Projection.SetAspectRatio(mouse.ViewportWidth, mouse.ViewportHeight);
     camera.Update();
@@ -105,6 +105,11 @@ public:
       camera.MouseInputTurntable(mouse);
     }
 
+    if (other) {
+      screen.Frustum(other->ViewProjection(), other->Projection.NearZ,
+                     other->Projection.FarZ);
+    }
+
     auto drawlist = screen.DrawList();
     drawlist.GizmoToMarker(camera, mouse);
     for (auto &c : drawlist.Markers) {
@@ -127,6 +132,6 @@ Renderer::~Renderer() { delete m_impl; }
 void Renderer::Render(rectray::Screen &screen, rectray::Camera &camera,
                       const rectray::WindowMouseState &mouse,
                       struct ImDrawList *imDrawList, struct Scene *scene,
-                      rectray::Screen *other) {
+                      rectray::Camera *other) {
   m_impl->Render(screen, camera, mouse, imDrawList, scene, other);
 }

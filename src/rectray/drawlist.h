@@ -22,8 +22,9 @@ struct Cube {
 };
 
 struct Frustum {
-  EuclideanTransform Transform;
-  Projection Projection;
+  DirectX::XMFLOAT4X4 ViewProjection;
+  float Near;
+  float Far;
 };
 
 struct Command {
@@ -190,6 +191,7 @@ struct DrawList {
         points[4] = points[0];
         Self->AddPolyline(points, 5, Color, 0, 1);
       }
+
       void operator()(const gizmo::Cube &cube) {
 
         const float s = 0.5f;
@@ -202,6 +204,11 @@ struct DrawList {
             {-s, -s, +s}, {+s, -s, +s}, {+s, +s, +s}, {-s, +s, +s},
             {-s, -s, -s}, {+s, -s, -s}, {+s, +s, -s}, {-s, +s, -s},
         };
+        auto m = DirectX::XMLoadFloat4x4(&cube.Matrix);
+        for (int i = 0; i < 8; ++i) {
+          DirectX::XMStoreFloat3(&p[i], DirectX::XMVector3Transform(
+                                            DirectX::XMLoadFloat3(&p[i]), m));
+        }
 
         struct Face {
           int I0;
@@ -213,13 +220,6 @@ struct DrawList {
             {1, 5, 6, 2}, {2, 6, 7, 3}, {0, 1, 2, 3}, //+x+y+z
             {4, 0, 3, 7}, {5, 1, 0, 4}, {5, 4, 7, 6}, //-x-y-z
         };
-
-        auto m = DirectX::XMLoadFloat4x4(&cube.Matrix);
-        for (int i = 0; i < 8; ++i) {
-          DirectX::XMStoreFloat3(&p[i], DirectX::XMVector3Transform(
-                                            DirectX::XMLoadFloat3(&p[i]), m));
-        }
-
         for (int i = 0; i < 6; ++i) {
           auto [i0, i1, i2, i3] = faces[i];
 
@@ -227,7 +227,63 @@ struct DrawList {
           (*this)(rect);
         }
       }
-      void operator()(const gizmo::Frustum &frustum) {}
+
+      void operator()(const gizmo::Frustum &frustum) {
+
+        auto inv = DirectX::XMMatrixInverse(
+            nullptr, DirectX::XMLoadFloat4x4(&frustum.ViewProjection));
+        DirectX::XMFLOAT4 p[8];
+        DirectX::XMStoreFloat4(&p[0],
+                               DirectX::XMVector3Transform(
+                                   DirectX::XMVectorSet(-1, -1, +1, 1), inv));
+        DirectX::XMStoreFloat4(&p[1],
+                               DirectX::XMVector3Transform(
+                                   DirectX::XMVectorSet(+1, -1, +1, 1), inv));
+        DirectX::XMStoreFloat4(&p[2],
+                               DirectX::XMVector3Transform(
+                                   DirectX::XMVectorSet(+1, +1, +1, 1), inv));
+        DirectX::XMStoreFloat4(&p[3],
+                               DirectX::XMVector3Transform(
+                                   DirectX::XMVectorSet(-1, +1, +1, 1), inv));
+        DirectX::XMStoreFloat4(&p[4],
+                               DirectX::XMVector3Transform(
+                                   DirectX::XMVectorSet(-1, -1, -1, 1), inv));
+        DirectX::XMStoreFloat4(&p[5],
+                               DirectX::XMVector3Transform(
+                                   DirectX::XMVectorSet(+1, -1, -1, 1), inv));
+        DirectX::XMStoreFloat4(&p[6],
+                               DirectX::XMVector3Transform(
+                                   DirectX::XMVectorSet(+1, +1, -1, 1), inv));
+        DirectX::XMStoreFloat4(&p[7],
+                               DirectX::XMVector3Transform(
+                                   DirectX::XMVectorSet(-1, +1, -1, 1), inv));
+
+        struct Face {
+          int I0;
+          int I1;
+          int I2;
+          int I3;
+        };
+        Face faces[] = {
+            {1, 5, 6, 2}, {2, 6, 7, 3}, {0, 1, 2, 3}, //+x+y+z
+            {4, 0, 3, 7}, {5, 1, 0, 4}, {5, 4, 7, 6}, //-x-y-z
+        };
+        for (int i = 0; i < std::size(faces); ++i) {
+          auto [i0, i1, i2, i3] = faces[i];
+
+          DirectX::XMFLOAT3 p0 = {p[i0].x / p[i0].w, p[i0].y / p[i0].w,
+                                  p[i0].z / p[i0].w};
+          DirectX::XMFLOAT3 p1 = {p[i1].x / p[i1].w, p[i1].y / p[i1].w,
+                                  p[i1].z / p[i1].w};
+          DirectX::XMFLOAT3 p2 = {p[i2].x / p[i2].w, p[i2].y / p[i2].w,
+                                  p[i2].z / p[i2].w};
+          DirectX::XMFLOAT3 p3 = {p[i3].x / p[i3].w, p[i3].y / p[i3].w,
+                                  p[i3].z / p[i3].w};
+
+          gizmo::Rect rect{p0, p1, p2, p3};
+          (*this)(rect);
+        }
+      }
     };
 
     for (auto &g : Gizmos) {
