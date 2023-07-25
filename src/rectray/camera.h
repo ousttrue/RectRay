@@ -16,30 +16,21 @@
 
 namespace rectray {
 
-struct Viewport {
-  float Left = 0;
-  float Top = 0;
-  float Width = 0;
-  float Height = 0;
-  std::array<float, 4> Color = {1, 0, 1, 0};
-  float Depth = 1.0f;
-
-  float AspectRatio() const { return Width / Height; }
-  float Right() const { return Left + Width; }
-  float Bottom() const { return Top + Height; }
-};
 struct Projection {
-  Viewport Viewport;
+  // Viewport Viewport;
   float FovY = DirectX::XMConvertToRadians(30.0f);
   float NearZ = 0.01f;
   float FarZ = 1000.0f;
+  float AspectRatio = 1.0f;
+  void SetAspectRatio(float width, float height) {
+    AspectRatio = width / height;
+  }
 
   void Update(DirectX::XMFLOAT4X4 *projection) {
-    auto aspectRatio = Viewport.AspectRatio();
+    // auto aspectRatio = Viewport.AspectRatio();
 #if 1
     DirectX::XMStoreFloat4x4(projection, DirectX::XMMatrixPerspectiveFovRH(
-                                             FovY, aspectRatio, NearZ,
-                                             FarZ));
+                                             FovY, AspectRatio, NearZ, FarZ));
 #else
     float cot = 1 / tan(FovY);
     float a = aspectRatio;
@@ -70,13 +61,13 @@ struct Projection {
 #endif
   }
 
-  void SetViewport(const struct Viewport &viewport) { Viewport = viewport; }
+  // void SetViewport(const struct Viewport &viewport) { Viewport = viewport; }
+  //
+  // void SetRect(float x, float y, float w, float h) {
+  //   SetViewport({x, y, w, h});
+  // }
 
-  void SetRect(float x, float y, float w, float h) {
-    SetViewport({x, y, w, h});
-  }
-
-  void SetSize(float w, float h) { SetRect(0, 0, w, h); }
+  // void SetSize(float w, float h) { SetRect(0, 0, w, h); }
 };
 
 struct EuclideanTransform {
@@ -256,9 +247,9 @@ struct Camera {
     Transform = et.Invrsed();
   }
 
-  void Shift(int dx, int dy) {
-    auto factor = std::tan(Projection.FovY * 0.5f) * 2.0f * GazeDistance /
-                  Projection.Viewport.Height;
+  void Shift(int dx, int dy, float viewportHeight) {
+    auto factor =
+        std::tan(Projection.FovY * 0.5f) * 2.0f * GazeDistance / viewportHeight;
 
     auto _m = DirectX::XMMatrixRotationQuaternion(
         DirectX::XMLoadFloat4(&Transform.Rotation));
@@ -304,15 +295,14 @@ struct Camera {
   }
 
   void MouseInputTurntable(const WindowMouseState &mouse) {
-    Projection.SetRect(mouse.ViewportX, mouse.ViewportY, mouse.ViewportWidth,
-                       mouse.ViewportHeight);
+    Projection.SetAspectRatio(mouse.ViewportWidth, mouse.ViewportHeight);
     if (mouse.MouseRightDown) {
       YawPitch(static_cast<int>(mouse.MouseDeltaX),
                static_cast<int>(mouse.MouseDeltaY));
     }
     if (mouse.MouseMiddleDown) {
       Shift(static_cast<int>(mouse.MouseDeltaX),
-            static_cast<int>(mouse.MouseDeltaY));
+            static_cast<int>(mouse.MouseDeltaY), mouse.ViewportHeight);
     }
     Dolly(static_cast<int>(mouse.MouseWheel));
     Update();
@@ -354,16 +344,17 @@ struct Camera {
   // v
   //
   // Y
-  std::optional<Ray> GetRay(float PixelFromLeft, float PixelFromTop) const {
+  std::optional<Ray> GetRay(const WindowMouseState &mouse) const {
     Ray ret{
         Transform.Translation,
     };
 
     auto t = tan(Projection.FovY / 2);
-    auto h = Projection.Viewport.Height / 2;
-    auto y = t * (h - PixelFromTop) / h;
-    auto w = Projection.Viewport.Width / 2;
-    auto x = t * Projection.Viewport.AspectRatio() * (PixelFromLeft - w) / w;
+    auto h = mouse.ViewportHeight / 2;
+    auto y = t * (h - (mouse.MouseY - mouse.ViewportY)) / h;
+    auto w = mouse.ViewportWidth / 2;
+    auto x =
+        t * Projection.AspectRatio * ((mouse.MouseX - mouse.ViewportX) - w) / w;
 
     auto q = DirectX::XMLoadFloat4(&Transform.Rotation);
     DirectX::XMStoreFloat3(
@@ -378,10 +369,6 @@ struct Camera {
     }
     return ret;
   }
-
-  // std::optional<Ray> GetRay(const WindowMouseState &mouse) const {
-  //   return GetRay(mouse.MouseX, mouse.MouseY);
-  // }
 };
 
 inline std::optional<float> Intersects(const Ray &ray, DirectX::XMMATRIX m) {

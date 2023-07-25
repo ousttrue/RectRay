@@ -22,12 +22,8 @@ struct Cube {
 };
 
 struct Frustum {
-  DirectX::XMFLOAT3 Position;
-  DirectX::XMFLOAT4 Rotation;
-  float Near;
-  float Far;
-  float FovY;
-  float AspectRatio;
+  EuclideanTransform Transform;
+  Projection Projection;
 };
 
 struct Command {
@@ -146,7 +142,7 @@ struct DrawList {
     Markers.push_back({line, col});
   }
 
-  void GizmoToMarker(const Camera &camera) {
+  void GizmoToMarker(const Camera &camera, const WindowMouseState &mouse) {
 
     auto vp = camera.ViewProjection();
     DirectX::XMFLOAT4X4 m;
@@ -154,6 +150,7 @@ struct DrawList {
 
     struct Visitor {
       const Camera &Camera;
+      const WindowMouseState &Mouse;
       DrawList *Self;
       DirectX::XMFLOAT4X4 Matrix;
       uint32_t Color;
@@ -177,10 +174,10 @@ struct DrawList {
             &p3, DirectX::XMVector4Transform(
                      DirectX::XMVectorSet(r.P3.x, r.P3.y, r.P3.z, 1), m));
 
-        auto ToScreenW = [w = Camera.Projection.Viewport.Width](const auto &c)
+        auto ToScreenW = [w = Mouse.ViewportWidth](const auto &c)
         //
         { return (c * 0.5f + 0.5f) * w; };
-        auto ToScreenH = [h = Camera.Projection.Viewport.Height](const auto &c)
+        auto ToScreenH = [h = Mouse.ViewportHeight](const auto &c)
         //
         { return (-c * 0.5f + 0.5f) * h; };
 
@@ -234,7 +231,7 @@ struct DrawList {
     };
 
     for (auto &g : Gizmos) {
-      std::visit(Visitor{camera, this, m, g.Color}, g.Shape);
+      std::visit(Visitor{camera, mouse, this, m, g.Color}, g.Shape);
     }
     Gizmos.clear();
   }

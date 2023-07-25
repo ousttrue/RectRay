@@ -23,8 +23,7 @@ class Screen {
 public:
   void Begin(const Camera &camera, const WindowMouseState &mouse) {
     m_drawlist.Clear();
-    m_ray = camera.GetRay(mouse.MouseX - mouse.ViewportX,
-                          mouse.MouseY - mouse.ViewportY);
+    m_ray = camera.GetRay(mouse);
   }
   Result End() { return {}; }
   DrawList &DrawList() { return m_drawlist; }
@@ -44,6 +43,15 @@ public:
     gizmo::Cube cube;
     DirectX::XMStoreFloat4x4(&cube.Matrix, m);
     m_drawlist.Gizmos.push_back({cube, hover ? YELLOW : WHITE});
+  }
+
+  void Frustum(const Camera &camera) {
+    gizmo::Frustum frustum{
+        .Transform = camera.Transform,
+
+    };
+    auto WHITE = 0xFFFFFFFF;
+    m_drawlist.Gizmos.push_back({frustum, WHITE});
   }
 };
 

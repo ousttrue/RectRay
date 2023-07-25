@@ -72,8 +72,7 @@ public:
               const rectray::WindowMouseState &mouse, ImDrawList *imDrawList,
               Scene *scene, rectray::Screen *other) {
     // only ViewportX update
-    camera.Projection.SetRect(mouse.ViewportX, mouse.ViewportY,
-                              mouse.ViewportWidth, mouse.ViewportHeight);
+    camera.Projection.SetAspectRatio(mouse.ViewportWidth, mouse.ViewportHeight);
     camera.Update();
 
     screen.Begin(camera, mouse);
@@ -107,7 +106,7 @@ public:
     }
 
     auto drawlist = screen.DrawList();
-    drawlist.GizmoToMarker(camera);
+    drawlist.GizmoToMarker(camera, mouse);
     for (auto &c : drawlist.Markers) {
       std::visit(
           ImGuiVisitor{imDrawList, c, {mouse.ViewportX, mouse.ViewportY}},
