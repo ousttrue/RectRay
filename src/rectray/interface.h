@@ -24,6 +24,11 @@ struct Context {
   Camera Camera;
   ScreenState Mouse;
   std::optional<Ray> Ray;
+
+  float PixelToLength(uint32_t pixel, const DirectX::XMFLOAT3 &world) {
+    // TODO:
+    return 0.1f;
+  }
 };
 
 class Interface {
@@ -66,7 +71,12 @@ public:
         s,
         e,
     };
-    m_drawlist.Gizmos.push_back({allow, color});
+
+    std::optional<float> hit;
+    if (m_context.Ray) {
+      hit = LessDistance(*m_context.Ray, s, e, m_context.PixelToLength(4, s));
+    }
+    m_drawlist.Gizmos.push_back({allow, color, nullptr, hit});
   }
 
   void Cube(void *handle, DirectX::XMMATRIX m) {

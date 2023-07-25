@@ -16,6 +16,45 @@
 
 namespace rectray {
 
+inline DirectX::XMFLOAT2 operator+(const DirectX::XMFLOAT2 &l,
+                                   const DirectX::XMFLOAT2 &r) {
+  return DirectX::XMFLOAT2{l.x + r.x, l.y + r.y};
+}
+inline DirectX::XMFLOAT2 operator-(const DirectX::XMFLOAT2 &l,
+                                   const DirectX::XMFLOAT2 &r) {
+  return DirectX::XMFLOAT2{l.x - r.x, l.y - r.y};
+}
+inline DirectX::XMFLOAT2 operator*(const DirectX::XMFLOAT2 &l, float f) {
+  return DirectX::XMFLOAT2{l.x * f, l.y * f};
+}
+inline float Length(const DirectX::XMFLOAT2 &v) {
+  return sqrt(v.x * v.x + v.y * v.y);
+}
+inline DirectX::XMFLOAT2 Normalized(const DirectX::XMFLOAT2 &v) {
+  auto f = 1.0f / Length(v);
+  return {v.x * f, v.y * f};
+}
+
+inline DirectX::XMFLOAT3 operator+(const DirectX::XMFLOAT3 &l,
+                                   const DirectX::XMFLOAT3 &r) {
+  return DirectX::XMFLOAT3{l.x + r.x, l.y + r.y, l.z + r.z};
+}
+inline DirectX::XMFLOAT3 operator-(const DirectX::XMFLOAT3 &l,
+                                   const DirectX::XMFLOAT3 &r) {
+  return DirectX::XMFLOAT3{l.x - r.x, l.y - r.y, l.z - r.z};
+}
+inline DirectX::XMFLOAT3 operator*(const DirectX::XMFLOAT3 &l, float f) {
+  return DirectX::XMFLOAT3{l.x * f, l.y * f, l.z * f};
+}
+inline float Dot(const DirectX::XMFLOAT3 &l, const DirectX::XMFLOAT3 &r) {
+  return l.x * r.x + l.y * r.y + l.z * r.z;
+}
+inline float Length(const DirectX::XMFLOAT3 &v) { return sqrt(Dot(v, v)); }
+inline DirectX::XMFLOAT3 Normalized(const DirectX::XMFLOAT3 &v) {
+  auto f = 1.0f / Length(v);
+  return {v.x * f, v.y * f, v.z * f};
+}
+
 struct Projection {
   // Viewport Viewport;
   float FovY = DirectX::XMConvertToRadians(30.0f);
@@ -387,10 +426,9 @@ struct Camera {
         t * Projection.AspectRatio * ((mouse.MouseX - mouse.ViewportX) - w) / w;
 
     auto q = DirectX::XMLoadFloat4(&Transform.Rotation);
-    DirectX::XMStoreFloat3(
-        &ret.Direction,
-        DirectX::XMVector3Rotate(
-            DirectX::XMVector3Normalize(DirectX::XMVectorSet(x, y, -1, 0)), q));
+    DirectX::XMStoreFloat3(&ret.Direction,
+                           DirectX::XMVector3Normalize(DirectX::XMVector3Rotate(
+                               DirectX::XMVectorSet(x, y, -1, 0), q)));
 
     // std::cout << x << "," << y << std::endl;
 
@@ -443,14 +481,18 @@ inline std::optional<float> Intersects(const Ray &ray, DirectX::XMMATRIX m) {
                                            DirectX::XMLoadFloat3(&p[i1]), //
                                            DirectX::XMLoadFloat3(&p[i2]), //
                                            dist)) {
-      closest = std::min(dist, closest);
+      if (dist < closest) {
+        closest = dist;
+      }
     } else if (DirectX::TriangleTests::Intersects(
                    origin, direction,             //
                    DirectX::XMLoadFloat3(&p[i2]), //
                    DirectX::XMLoadFloat3(&p[i3]), //
                    DirectX::XMLoadFloat3(&p[i0]), //
                    dist)) {
-      closest = std::min(dist, closest);
+      if (dist < closest) {
+        closest = dist;
+      }
     }
   }
   if (std::isfinite(closest)) {
@@ -458,6 +500,35 @@ inline std::optional<float> Intersects(const Ray &ray, DirectX::XMMATRIX m) {
   } else {
     return std::nullopt;
   }
+}
+
+inline std::optional<float> LessDistance(const Ray &ray,
+                                         const DirectX::XMFLOAT3 &q0,
+                                         const DirectX::XMFLOAT3 &q1,
+                                         float distance) {
+
+  auto &p0 = ray.Origin;
+  auto &pv = ray.Direction;
+  auto qv = Normalized(q1 - q0);
+
+  auto pv2 = Dot(pv, pv);
+  auto qv2 = Dot(qv, qv);
+  auto vpq = Dot(pv, qv);
+
+  auto dot0 = Dot((q0 - p0), pv);
+  auto dot1 = Dot((p0 - q0), qv);
+
+  auto f = 1 / (pv2 * qv2 - vpq * vpq);
+  auto s = f * qv2 * dot0 + vpq * dot1;
+  auto t = f * vpq * dot0 + pv2 * dot1;
+
+  auto c0 = p0 + pv * s;
+  auto c1 = q0 + qv * t;
+  auto d = Length(c0 - c1);
+  if (d > distance) {
+    return {};
+  }
+  return s;
 }
 
 } // namespace rectray

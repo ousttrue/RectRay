@@ -1,31 +1,13 @@
 #pragma once
 #include "camera.h"
 #include <DirectXMath.h>
+#include <list>
 #include <optional>
 #include <string>
 #include <variant>
 #include <vector>
 
 namespace rectray {
-
-inline DirectX::XMFLOAT2 operator+(const DirectX::XMFLOAT2 &l,
-                                   const DirectX::XMFLOAT2 &r) {
-  return DirectX::XMFLOAT2{l.x + r.x, l.y + r.y};
-}
-inline DirectX::XMFLOAT2 operator-(const DirectX::XMFLOAT2 &l,
-                                   const DirectX::XMFLOAT2 &r) {
-  return DirectX::XMFLOAT2{l.x - r.x, l.y - r.y};
-}
-inline DirectX::XMFLOAT2 operator*(const DirectX::XMFLOAT2 &l, float f) {
-  return DirectX::XMFLOAT2{l.x * f, l.y * f};
-}
-inline float Length(const DirectX::XMFLOAT2 &v) {
-  return sqrt(v.x * v.x + v.y * v.y);
-}
-inline DirectX::XMFLOAT2 Normalized(const DirectX::XMFLOAT2 &v) {
-  auto f = 1.0f / Length(v);
-  return {v.x * f, v.y * f};
-}
 
 namespace gizmo {
 
@@ -62,8 +44,8 @@ struct Arrow {
 
 struct Command {
   std::variant<Rect, Cube, Frustum, Arrow> Shape;
-  uint32_t Color;
-  void *Handle;
+  uint32_t Color = 0xFFFFFFFF;
+  void *Handle = nullptr;
   std::optional<float> RayHit;
 };
 
@@ -125,7 +107,7 @@ struct Command {
 } // namespace marker
 
 struct DrawList {
-  std::vector<gizmo::Command> Gizmos;
+  std::list<gizmo::Command> Gizmos;
   std::vector<primitive::Command> Primitives;
   std::vector<marker::Command> Markers;
 
