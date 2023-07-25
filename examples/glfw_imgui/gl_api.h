@@ -9,17 +9,19 @@
 #include <vector>
 
 #ifdef __EMSCRIPTEN__
-#include <imgui_impl_opengl3.h>
-#define GL_SILENCE_DEPRECATION
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <GLES2/gl2.h>
-#endif
 #define GL_GLEXT_PROTOTYPES
-#include <GLES2/gl2ext.h>
-#define glBindVertexArray glBindVertexArrayOES
-#define glGenVertexArrays glGenVertexArraysOES
-#define glDeleteVertexArrays glDeleteVertexArraysOES
-#include <GLES3/gl3.h>
+#define GL_SILENCE_DEPRECATION
+// #include <imgui_impl_opengl3.h>
+// #if defined(IMGUI_IMPL_OPENGL_ES2)
+// #include <GLES2/gl2.h>
+// #include <GLES2/gl2ext.h>
+// #define glBindVertexArray glBindVertexArrayOES
+// #define glGenVertexArrays glGenVertexArraysOES
+// #define glDeleteVertexArrays glDeleteVertexArraysOES
+// #elif defined(IMGUI_IMPL_OPENGL_ES3)
+#include <GLES3/gl32.h>
+// #include <GLES3/gl3ext.h>
+// #endif
 inline const char *SHADER_HEADER = "#version 300 es\nprecision highp float;\n";
 
 #else
@@ -513,7 +515,7 @@ inline void ClearViewport(int width, int height, const float clear_color[4],
                  clear_color[3]);
   }
   if (depth) {
-    glClearDepth(*depth);
+    glClearDepthf(*depth);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   } else {
     glClear(GL_COLOR_BUFFER_BIT);
