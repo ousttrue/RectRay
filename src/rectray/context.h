@@ -9,10 +9,9 @@ struct Context {
   ViewportState Viewport;
   std::optional<Ray> Ray;
 
-  Context() {}
-
-  Context(const struct Camera &camera, const ViewportState &screen)
-      : Camera(camera), Viewport(screen) {
+  void Begin(const struct Camera &camera, const ViewportState &viewport) {
+    Camera = camera;
+    Viewport = viewport;
     if (Viewport.Focus != ViewportFocus::None) {
       Ray = Camera.GetRay(Viewport);
     }
@@ -80,7 +79,6 @@ struct Context {
   //   }
   //   return s;
   // }
-
 };
 
 } // namespace rectray

@@ -34,7 +34,7 @@ public:
   void Begin(const Camera &camera, const ViewportState &viewport) {
     m_hits.clear();
     m_drawlist.Clear();
-    m_context = Context(camera, viewport);
+    m_context.Begin(camera, viewport);
   }
 
   Result End() {

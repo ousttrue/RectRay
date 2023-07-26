@@ -62,6 +62,23 @@ inline DirectX::XMFLOAT3 Normalized(const DirectX::XMFLOAT3 &v) {
   return {v.x * f, v.y * f, v.z * f};
 }
 
+inline DirectX::XMFLOAT3 MatrixAxisX(const DirectX::XMFLOAT4X4 &m) {
+  auto t = m.m[0];
+  return *((const DirectX::XMFLOAT3 *)&t);
+}
+inline DirectX::XMFLOAT3 MatrixAxisY(const DirectX::XMFLOAT4X4 &m) {
+  auto t = m.m[1];
+  return *((const DirectX::XMFLOAT3 *)&t);
+}
+inline DirectX::XMFLOAT3 MatrixAxisZ(const DirectX::XMFLOAT4X4 &m) {
+  auto t = m.m[2];
+  return *((const DirectX::XMFLOAT3 *)&t);
+}
+inline DirectX::XMFLOAT3 MatrixPosition(const DirectX::XMFLOAT4X4 &m) {
+  auto t = m.m[3];
+  return *((const DirectX::XMFLOAT3 *)&t);
+}
+
 struct EuclideanTransform {
   DirectX::XMFLOAT4 Rotation = {0, 0, 0, 1};
   DirectX::XMFLOAT3 Translation = {0, 0, 0};
