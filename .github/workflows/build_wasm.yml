@@ -31,8 +31,9 @@ jobs:
           meson compile -C build
           mkdir public
           cp build/examples/glfw_imgui/rectray_glfw_imgui.{wasm,js,html} public/
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v3
+          mv public/rectray_glfw_imgui.html public/index.html
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: wasm build
-          path: public
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
