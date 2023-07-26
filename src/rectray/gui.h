@@ -30,6 +30,8 @@ class Gui {
 public:
   std::list<float> m_hits;
   Context m_context;
+  std::optional<Drag> _drag;
+  DirectX::XMFLOAT4X4 _m;
 
   void Begin(const Camera &camera, const ViewportState &viewport) {
     m_hits.clear();
@@ -49,6 +51,7 @@ public:
       } else {
         // drag end
         m_drag = {};
+        _drag = {};
       }
     }
     if (!m_drag) {
@@ -67,6 +70,7 @@ public:
         if (m_context.Viewport.MouseLeftDown) {
           if (gizmo->BeginDrag) {
             m_drag = gizmo->BeginDrag(m_context);
+            _drag = Drag(m_context, _m, m_context.Ray->Direction);
           }
         }
       }
@@ -139,9 +143,15 @@ public:
         m_drawlist.AddCircleFilled(p, 2.f, 0xFF000000);
       }
     }
+
+    if (gui._drag) {
+      m_drawlist.AddCircle(gui._drag->Viewport, 5.f, 0xFF00FF00);
+    }
   }
 
   bool Translate(Space space, DirectX::XMFLOAT4X4 *matrix) {
+    _m = *matrix;
+
     // auto s = o->Transform.Translation;
     auto s = *((const DirectX::XMFLOAT3 *)&matrix->m[3]);
     // Arrow(s, {s.x, s.y + 1, s.z}, 0xFF00FF00, Translate::LocalY);

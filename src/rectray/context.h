@@ -1,5 +1,6 @@
 #pragma once
 #include "camera.h"
+#include "intersects.h"
 #include <optional>
 
 namespace rectray {
@@ -79,6 +80,25 @@ struct Context {
   //   }
   //   return s;
   // }
+};
+
+struct Drag {
+
+  Plain DragPlain;
+  DirectX::XMFLOAT4X4 Matrix;
+  DirectX::XMFLOAT3 World;
+  DirectX::XMFLOAT2 Viewport;
+
+  Drag(const Context &context, const DirectX::XMFLOAT4X4 &m,
+       const DirectX::XMFLOAT3 &plainNormal)
+      : DragPlain(Plain::Create(plainNormal, MatrixPosition(m))), Matrix(m) {
+    if (auto ray = context.Ray) {
+      if (auto t = Intersects(*ray, DragPlain)) {
+        World = ray->Point(*t);
+        Viewport = context.WorldToViewport(World);
+      }
+    }
+  }
 };
 
 } // namespace rectray
