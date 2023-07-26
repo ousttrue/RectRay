@@ -198,6 +198,13 @@ struct Camera {
     Projection.FarZ = r * 100.0f;
   }
 
+  Plain FarPlain() const {
+    DirectX::XMFLOAT4X4 m;
+    DirectX::XMStoreFloat4x4(&m, Transform.Matrix());
+    auto &dir = *(const DirectX::XMFLOAT3 *)&m.m[2];
+    return Plain::Create(dir, Transform.Translation + dir * Projection.FarZ);
+  }
+
   // 0-> X
   // |
   // v

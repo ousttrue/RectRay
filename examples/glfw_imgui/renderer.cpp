@@ -105,12 +105,7 @@ public:
     }
 
     if (other) {
-      auto &otherCamera = other->m_context.Camera;
-      gui.Frustum(otherCamera.ViewProjection(), otherCamera.Projection.NearZ,
-                  otherCamera.Projection.FarZ);
-      if (auto ray = other->m_context.Ray) {
-        gui.Ray(*ray, otherCamera.Projection.FarZ);
-      }
+      gui.Debug(*other);
     }
 
     auto drawlist = gui.DrawList();

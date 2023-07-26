@@ -274,16 +274,16 @@ struct DrawList {
                                    DirectX::XMVectorSet(-1, +1, +1, 1), inv));
         DirectX::XMStoreFloat4(&p[4],
                                DirectX::XMVector3Transform(
-                                   DirectX::XMVectorSet(-1, -1, -1, 1), inv));
+                                   DirectX::XMVectorSet(-1, -1, 0, 1), inv));
         DirectX::XMStoreFloat4(&p[5],
                                DirectX::XMVector3Transform(
-                                   DirectX::XMVectorSet(+1, -1, -1, 1), inv));
+                                   DirectX::XMVectorSet(+1, -1, 0, 1), inv));
         DirectX::XMStoreFloat4(&p[6],
                                DirectX::XMVector3Transform(
-                                   DirectX::XMVectorSet(+1, +1, -1, 1), inv));
+                                   DirectX::XMVectorSet(+1, +1, 0, 1), inv));
         DirectX::XMStoreFloat4(&p[7],
                                DirectX::XMVector3Transform(
-                                   DirectX::XMVectorSet(-1, +1, -1, 1), inv));
+                                   DirectX::XMVectorSet(-1, +1, 0, 1), inv));
 
         struct Face {
           int I0;

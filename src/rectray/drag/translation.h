@@ -1,5 +1,6 @@
 #pragma once
 #include "../drawlist.h"
+#include "../intersects.h"
 
 namespace rectray {
 
@@ -17,8 +18,10 @@ struct Translation : IDragHandle {
     m_srcWorld = *((const DirectX::XMFLOAT3 *)&m.m[3]);
     m_plain = Plain::Create(normal, m_srcWorld);
     m_src = context.WorldToViewport(m_srcWorld);
-    if (auto p = context.Intersects(m_plain)) {
-      m_srcOnPlain = context.WorldToViewport(*p);
+    if (auto ray = context.Ray) {
+      if (auto t = Intersects(*ray, m_plain)) {
+        m_srcOnPlain = context.WorldToViewport(ray->Point(*t));
+      }
     }
   }
 
@@ -36,10 +39,12 @@ struct Translation : IDragHandle {
       // Vec2 sourcePosOnScreen = current.CameraMouse.WorldToPos(mMatrixOrigin);
       m_drawlist.AddCircle(m_src, 6.f, translationLineColor);
 
-      if (auto w = context.Intersects(m_plain)) {
-        auto pos = context.WorldToViewport(*w);
-        auto delta = m_src - m_srcOnPlain;
-        m_drawlist.AddCircle(pos + delta, 6.f, translationLineColor);
+      if (auto ray = context.Ray) {
+        if (auto t = Intersects(*ray, m_plain)) {
+          auto pos = context.WorldToViewport(ray->Point(*t));
+          auto delta = m_src - m_srcOnPlain;
+          m_drawlist.AddCircle(pos + delta, 6.f, translationLineColor);
+        }
       }
     }
   }

@@ -51,7 +51,7 @@ struct ViewportState {
     };
   }
 
-  std::optional<DirectX::XMFLOAT2> Intersect(const DirectX::XMFLOAT2 &a,
+  std::optional<DirectX::XMFLOAT2> Intersects(const DirectX::XMFLOAT2 &a,
                                              const DirectX::XMFLOAT2 &b,
                                              uint32_t pixel) {
     DirectX::XMFLOAT2 p{MouseX, MouseY};

@@ -4,6 +4,7 @@
 #include "drag/translation.h"
 #include "drawlist.h"
 #include <DirectXMath.h>
+#include <list>
 #include <optional>
 
 namespace rectray {
@@ -27,11 +28,12 @@ class Gui {
   std::shared_ptr<IDragHandle> m_drag;
 
 public:
+  std::list<float> m_hits;
   Context m_context;
 
   void Begin(const Camera &camera, const ViewportState &viewport) {
+    m_hits.clear();
     m_drawlist.Clear();
-
     m_context = Context(camera, viewport);
   }
 
@@ -82,14 +84,24 @@ public:
     };
     auto hit = m_context.Intersects(s, e, 4);
     m_drawlist.Gizmos.push_back({allow, color, nullptr, hit, drag});
+    if (hit) {
+      m_hits.push_back(*hit);
+    }
   }
 
   void Cube(void *handle, DirectX::XMMATRIX m) {
-    auto hit = m_context.Intersects(m);
     gizmo::Cube cube;
     DirectX::XMStoreFloat4x4(&cube.Matrix, m);
+
+    std::optional<float> hit;
+    if (auto ray = m_context.Ray) {
+      hit = Intersects(*ray, m);
+    }
     m_drawlist.Gizmos.push_back(
         {cube, WHITE, handle, hit}); // hover ? YELLOW : WHITE});
+    if (hit) {
+      m_hits.push_back(*hit);
+    }
   }
 
   void Frustum(DirectX::XMMATRIX ViewProjection, float zNear, float zFar) {
@@ -101,12 +113,32 @@ public:
     m_drawlist.Gizmos.push_back({frustum, WHITE});
   }
 
-  void Ray(const Ray &ray, float zFar) {
-    primitive::Line line{
-        ray.Origin,
-        ray.Point(zFar),
-    };
-    m_drawlist.Primitives.push_back({line, YELLOW});
+  void Ray(const Ray &ray, const Plain farPlain) {
+    if (auto t = Intersects(ray, farPlain)) {
+      primitive::Line line{
+          ray.Origin,
+          ray.Point(*t),
+      };
+      m_drawlist.Primitives.push_back({line, YELLOW});
+    } else {
+      assert(false);
+    }
+  }
+
+  void Debug(const Gui &gui) {
+    auto &otherCamera = gui.m_context.Camera;
+    Frustum(otherCamera.ViewProjection(), otherCamera.Projection.NearZ,
+            otherCamera.Projection.FarZ);
+    if (auto ray = gui.m_context.Ray) {
+      Ray(*ray, otherCamera.FarPlain());
+
+      for (auto hit : gui.m_hits) {
+        auto w = ray->Point(hit);
+        auto p = m_context.WorldToViewport(w);
+        m_drawlist.AddCircle(p, 3.f, 0xFFFF00FF);
+        m_drawlist.AddCircleFilled(p, 2.f, 0xFF000000);
+      }
+    }
   }
 
   bool Translate(Space space, DirectX::XMFLOAT4X4 *matrix) {

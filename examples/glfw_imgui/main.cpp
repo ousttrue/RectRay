@@ -44,6 +44,11 @@ struct ViewportGui {
         ImGui::BeginDisabled(true);
       }
 
+      ImGui::TextUnformatted("ray hits");
+      for (auto hit : Gui.m_hits) {
+        ImGui::Text("hit: %0.3f", hit);
+      }
+
       ImGui::EndDisabled();
     }
     ImGui::End();
@@ -81,8 +86,8 @@ int main(int, char **) {
       .Name = "main camera",
       .Camera{
           .Projection{
-              .NearZ = 1,
-              .FarZ = 100,
+              .NearZ = 3,
+              .FarZ = 30,
           },
           .Transform{
               .Translation{0, 1, 10},
@@ -95,8 +100,8 @@ int main(int, char **) {
       .Name = "debug camera",
       .Camera{
           .Projection{
-              .NearZ = 1,
-              .FarZ = 100,
+              .NearZ = 3,
+              .FarZ = 30,
           },
           .Transform{
               .Translation{0, 1, 20},
@@ -143,7 +148,8 @@ int main(int, char **) {
             scene.Selected = o;
           }
         }
-        if (ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && clicked == 0) {
+        if (ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) &&
+            clicked == 0) {
           scene.Selected = {};
         }
         ImGui::TreePop();
