@@ -1,0 +1,8 @@
+[wrap-git]
+url = https://github.com/microsoft/DirectXMath.git
+revision = dec2022
+depth = 1
+patch_directory = directxmath
+
+[provide]
+directxmath = directxmath_dep
