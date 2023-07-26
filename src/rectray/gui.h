@@ -1,6 +1,7 @@
 #pragma once
 #include "camera.h"
 #include "context.h"
+#include "drag/translation.h"
 #include "drawlist.h"
 #include <DirectXMath.h>
 #include <optional>
@@ -9,59 +10,6 @@ namespace rectray {
 
 inline const auto YELLOW = 0xFF00FFFF;
 inline const auto WHITE = 0xFFFFFFFF;
-
-struct Translate : IDragHandle {
-
-  DrawList &m_drawlist;
-  DirectX::XMFLOAT2 m_src;
-
-  Translate(const Context &context, DrawList &drawlist,
-            const DirectX::XMFLOAT4X4 &m)
-      : m_drawlist(drawlist) {
-    m_src = context.WorldToViewport(m);
-  }
-
-  void Drag(const Context &context, DirectX::XMFLOAT4X4 *m) override {
-    {
-      // line
-      uint32_t translationLineColor = 0xFF0088FF;
-
-      // Vec2 sourcePosOnScreen = current.CameraMouse.WorldToPos(mMatrixOrigin);
-      m_drawlist.AddCircle(m_src, 6.f, translationLineColor);
-
-      // Vec2 destinationPosOnScreen =
-      //     current.CameraMouse.WorldToPos(current.Model.position());
-      // drawList.AddCircle(destinationPosOnScreen, 6.f, translationLineColor);
-      //
-      // Vec4 dif = {destinationPosOnScreen.x - sourcePosOnScreen.x,
-      //             destinationPosOnScreen.y - sourcePosOnScreen.y, 0.f, 0.f};
-      // dif.Normalize();
-      // dif *= 5.f;
-      // drawList.AddLine(
-      //     Vec2(sourcePosOnScreen.x + dif.x, sourcePosOnScreen.y + dif.y),
-      //     Vec2(destinationPosOnScreen.x - dif.x,
-      //          destinationPosOnScreen.y - dif.y),
-      //     translationLineColor, 2.f);
-    }
-  }
-
-  static std::shared_ptr<IDragHandle> LocalX(const Context &context,
-                                             DrawList &drawlist,
-                                             const DirectX::XMFLOAT4X4 &m) {
-
-    return std::make_shared<Translate>(context, drawlist, m);
-  }
-  // static std::shared_ptr<IDragHandle> LocalY(const Context &context,
-  //                                            const DirectX::XMFLOAT4X4 &m) {
-  //
-  //   return std::make_shared<Translate>();
-  // }
-  // static std::shared_ptr<IDragHandle> LocalZ(const Context &context,
-  //                                            const DirectX::XMFLOAT4X4 &m) {
-  //
-  //   return std::make_shared<Translate>();
-  // }
-};
 
 enum class Space {
   World,
@@ -171,7 +119,7 @@ public:
       // drag
       Arrow(s, {s.x + 1, s.y, s.z}, 0xFF00FFFF,
             [matrix, &drawlist = m_drawlist](const auto &c) {
-              return Translate::LocalX(c, drawlist, *matrix);
+              return Translation::LocalX(c, drawlist, *matrix);
             });
       m_drag->Drag(m_context, matrix);
       return true;
@@ -179,7 +127,7 @@ public:
 
     Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF,
           [matrix, &drawlist = m_drawlist](const auto &c) {
-            return Translate::LocalX(c, drawlist, *matrix);
+            return Translation::LocalX(c, drawlist, *matrix);
           });
     return false;
   }

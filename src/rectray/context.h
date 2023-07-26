@@ -32,7 +32,7 @@ struct Context {
   }
 
   DirectX::XMFLOAT2 WorldToViewport(const DirectX::XMFLOAT4X4 &m) const {
-    return WorldToViewport(*((const DirectX::XMFLOAT3*)&m.m[3]));
+    return WorldToViewport(*((const DirectX::XMFLOAT3 *)&m.m[3]));
   }
 
   std::optional<float> Intersects(const DirectX::XMFLOAT3 &s,
@@ -146,6 +146,30 @@ struct Context {
       return {};
     }
     return s;
+  }
+
+  std::optional<float> IntersectPlaneDistance(const Plain &p) const {
+    if (!Ray) {
+      return {};
+    }
+    float numer = Dot(p.Normal, Ray->Origin) - p.D;
+    float denom = Dot(p.Normal, Ray->Direction);
+    if (fabsf(denom) <
+        FLT_EPSILON) // normal is orthogonal to vector, cant intersect
+    {
+      return {};
+    }
+    return -(numer / denom);
+  }
+
+  std::optional<DirectX::XMFLOAT3> Intersects(const Plain &p) const {
+
+    if (auto d = IntersectPlaneDistance(p)) {
+      // const float len = fabsf(*d); // near plan
+      return Ray->Point(*d);
+    } else {
+      return {};
+    }
   }
 };
 

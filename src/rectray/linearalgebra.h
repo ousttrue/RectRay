@@ -168,4 +168,15 @@ struct Ray {
   }
 };
 
+struct Plain {
+  DirectX::XMFLOAT3 Normal;
+  float D = 0;
+
+  static Plain Create(const DirectX::XMFLOAT3 &normal,
+                      const DirectX::XMFLOAT3 &p = {0, 0, 0}) {
+    auto n = Normalized(normal);
+    return {n, Dot(n, p)};
+  }
+};
+
 } // namespace rectray
