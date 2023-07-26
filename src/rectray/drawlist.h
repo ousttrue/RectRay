@@ -8,14 +8,7 @@
 
 namespace rectray {
 
-struct IDragHandle {
-  virtual ~IDragHandle() {}
-  virtual void Drag(const Context &context, DirectX::XMFLOAT4X4 *m) = 0;
-};
-
 namespace gizmo {
-
-using DragFactory = std::function<IDragHandle *(const Context &conext)>;
 
 struct Rect {
   DirectX::XMFLOAT3 P0;
@@ -53,7 +46,7 @@ struct Command {
   uint32_t Color = 0xFFFFFFFF;
   void *Handle = nullptr;
   std::optional<float> RayHit;
-  DragFactory BeginDrag;
+  std::optional<DragInfo> Drag;
 };
 
 } // namespace gizmo

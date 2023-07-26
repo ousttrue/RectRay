@@ -19,19 +19,17 @@ enum class Space {
 
 struct Result {
   void *Closest;
-  void *Drag;
+  bool Drag;
   // std::optional<DirectX::XMFLOAT4X4> Updated;
 };
 
 class Gui {
   DrawList m_drawlist;
-  IDragHandle *m_drag = nullptr;
+  std::optional<DragContext> m_drag;
 
 public:
   std::list<float> m_hits;
   Context m_context;
-  std::optional<Drag> _drag;
-  DirectX::XMFLOAT4X4 _m;
 
   void Begin(const Camera &camera, const ViewportState &viewport) {
     m_hits.clear();
@@ -46,12 +44,11 @@ public:
     if (m_drag) {
       if (m_context.Viewport.MouseLeftDown) {
         // drag
-        result.Drag = m_drag;
+        result.Drag = m_drag ? true : false;
         result.Closest = {};
       } else {
         // drag end
         m_drag = {};
-        _drag = {};
       }
     }
     if (!m_drag) {
@@ -68,9 +65,10 @@ public:
         // hover
         gizmo->Color = YELLOW;
         if (m_context.Viewport.MouseLeftDown) {
-          if (gizmo->BeginDrag) {
-            m_drag = gizmo->BeginDrag(m_context);
-            _drag = Drag(m_context, _m, m_context.Ray->Direction);
+          if (gizmo->Drag) {
+            DragInfo &info = *gizmo->Drag;
+            m_drag = DragContext(m_context, info.Matrix,
+                                 m_context.Ray->Direction, info.Func);
           }
         }
       }
@@ -81,7 +79,7 @@ public:
   DrawList &DrawList() { return m_drawlist; }
 
   void Arrow(const DirectX::XMFLOAT3 &s, const DirectX::XMFLOAT3 &e,
-             uint32_t color, const gizmo::DragFactory &drag) {
+             uint32_t color, const DragInfo &drag) {
     gizmo::Arrow allow{
         s,
         e,
@@ -144,14 +142,12 @@ public:
       }
     }
 
-    if (gui._drag) {
-      m_drawlist.AddCircle(gui._drag->Viewport, 5.f, 0xFF00FF00);
+    if (gui.m_drag) {
+      // m_drawlist.AddCircle(gui.m_drag->Viewport, 5.f, 0xFF00FF00);
     }
   }
 
   bool Translate(Space space, DirectX::XMFLOAT4X4 *matrix) {
-    _m = *matrix;
-
     // auto s = o->Transform.Translation;
     auto s = *((const DirectX::XMFLOAT3 *)&matrix->m[3]);
     // Arrow(s, {s.x, s.y + 1, s.z}, 0xFF00FF00, Translate::LocalY);
@@ -159,19 +155,13 @@ public:
 
     if (m_drag && m_context.Viewport.MouseLeftDown) {
       // drag
-      Arrow(s, {s.x + 1, s.y, s.z}, 0xFF00FFFF,
-            [matrix, &drawlist = m_drawlist](const auto &c) {
-              return Translation::LocalX(drawlist, c, *matrix);
-            });
+      Arrow(s, {s.x + 1, s.y, s.z}, 0xFF00FFFF);
       m_drag->Drag(m_context, matrix);
       return true;
+    } else {
+      Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF, {*matrix, Translation::Drag});
+      return false;
     }
-
-    Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF,
-          [matrix, &drawlist = m_drawlist](const auto &c) {
-            return Translation::LocalX(drawlist, c, *matrix);
-          });
-    return false;
   }
 };
 
