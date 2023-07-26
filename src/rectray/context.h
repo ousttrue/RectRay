@@ -85,37 +85,4 @@ struct Context {
   // }
 };
 
-using DragFunc =
-    std::function<void(const Context &conext, DirectX::XMFLOAT4X4 *matrix)>;
-
-struct DragInfo {
-  const DirectX::XMFLOAT4X4 &Matrix;
-  DragFunc Func;
-};
-
-struct DragContext {
-
-  Plain DragPlain;
-  DirectX::XMFLOAT4X4 Matrix;
-  DirectX::XMFLOAT3 World;
-  DragFunc Drag;
-
-  // pickup plan
-  // auto normal = CalcNormal(cameraMouse, model, type);
-  // Plain = BuildPlan(model.position(), normal);
-  // PlainOrigin = cameraMouse.Ray.IntersectPlane(Plain);
-  // ModelPosition = model.position();
-
-  DragContext(const Context &context, const DirectX::XMFLOAT4X4 &m,
-              const DirectX::XMFLOAT3 &plainNormal, const DragFunc &drag)
-      : DragPlain(Plain::Create(plainNormal, MatrixPosition(m))), Matrix(m),
-        Drag(drag) {
-    if (auto ray = context.Ray) {
-      if (auto t = Intersects(*ray, DragPlain)) {
-        World = ray->Point(*t);
-      }
-    }
-  }
-};
-
 } // namespace rectray

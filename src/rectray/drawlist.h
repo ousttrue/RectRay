@@ -1,6 +1,7 @@
 #pragma once
 #include "camera.h"
 #include "context.h"
+#include "drag/drag.h"
 #include <functional>
 #include <list>
 #include <memory>
@@ -46,7 +47,7 @@ struct Command {
   uint32_t Color = 0xFFFFFFFF;
   void *Handle = nullptr;
   std::optional<float> RayHit;
-  std::optional<DragInfo> Drag;
+  std::function<DragFunc()> BeginDrag;
 };
 
 } // namespace gizmo

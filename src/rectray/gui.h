@@ -25,7 +25,7 @@ struct Result {
 
 class Gui {
   DrawList m_drawlist;
-  std::optional<DragContext> m_drag;
+  DragFunc m_drag;
 
 public:
   std::list<float> m_hits;
@@ -65,10 +65,8 @@ public:
         // hover
         gizmo->Color = YELLOW;
         if (m_context.Viewport.MouseLeftDown) {
-          if (gizmo->Drag) {
-            DragInfo &info = *gizmo->Drag;
-            m_drag = DragContext(m_context, info.Matrix,
-                                 m_context.Ray->Direction, info.Func);
+          if (gizmo->BeginDrag) {
+            m_drag = gizmo->BeginDrag();
           }
         }
       }
@@ -79,13 +77,13 @@ public:
   DrawList &DrawList() { return m_drawlist; }
 
   void Arrow(const DirectX::XMFLOAT3 &s, const DirectX::XMFLOAT3 &e,
-             uint32_t color, const DragInfo &drag) {
+             uint32_t color, const std::function<DragFunc()> &beginDrag = {}) {
     gizmo::Arrow allow{
         s,
         e,
     };
     auto hit = m_context.Intersects(s, e, 4);
-    m_drawlist.Gizmos.push_back({allow, color, nullptr, hit, drag});
+    m_drawlist.Gizmos.push_back({allow, color, nullptr, hit, beginDrag});
     if (hit) {
       m_hits.push_back(*hit);
     }
@@ -156,10 +154,13 @@ public:
     if (m_drag && m_context.Viewport.MouseLeftDown) {
       // drag
       Arrow(s, {s.x + 1, s.y, s.z}, 0xFF00FFFF);
-      m_drag->Drag(m_context, matrix);
+      m_drag(m_context, matrix, m_drawlist);
       return true;
     } else {
-      Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF, {*matrix, Translation::Drag});
+      Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF,
+            [&context = m_context, matrix]() {
+              return Translation(context, *matrix);
+            });
       return false;
     }
   }
