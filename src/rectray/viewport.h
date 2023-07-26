@@ -42,7 +42,7 @@ struct ViewportState {
     return true;
   }
 
-  DirectX::XMFLOAT2 ClipToViewpor(const DirectX::XMFLOAT4 &c) const {
+  DirectX::XMFLOAT2 ClipToViewport(const DirectX::XMFLOAT4 &c) const {
     auto x = (c.x / c.w) * 0.5f + 0.5f;
     auto y = (-c.y / c.w) * 0.5f + 0.5f;
     return {

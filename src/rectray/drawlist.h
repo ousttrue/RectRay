@@ -1,15 +1,22 @@
 #pragma once
 #include "camera.h"
-#include <DirectXMath.h>
+#include "context.h"
+#include <functional>
 #include <list>
-#include <optional>
-#include <string>
+#include <memory>
 #include <variant>
-#include <vector>
 
 namespace rectray {
 
+struct IDragHandle {
+  virtual ~IDragHandle() {}
+  virtual void Drag(const Context &context, DirectX::XMFLOAT4X4 *m) = 0;
+};
+
 namespace gizmo {
+
+using DragFactory =
+    std::function<std::shared_ptr<IDragHandle>(const Context &conext)>;
 
 struct Rect {
   DirectX::XMFLOAT3 P0;
@@ -47,6 +54,7 @@ struct Command {
   uint32_t Color = 0xFFFFFFFF;
   void *Handle = nullptr;
   std::optional<float> RayHit;
+  DragFactory BeginDrag;
 };
 
 } // namespace gizmo
@@ -313,8 +321,8 @@ struct DrawList {
             &p1, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&l.P1), m));
 
         const float THICKNESS = 4;
-        auto c0 = Viewport.ClipToViewpor(p0);
-        auto c1 = Viewport.ClipToViewpor(p1);
+        auto c0 = Viewport.ClipToViewport(p0);
+        auto c1 = Viewport.ClipToViewport(p1);
         Self->AddLine(c0, c1, Color, THICKNESS);
 
         auto [hl, hr] = gizmo::Arrow::GetSide(c0, c1);
@@ -342,7 +350,8 @@ struct DrawList {
         DirectX::XMStoreFloat4(
             &p1, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&l.P1), m));
 
-        Self->AddLine(Viewport.ClipToViewpor(p0), Viewport.ClipToViewpor(p1), Color);
+        Self->AddLine(Viewport.ClipToViewport(p0), Viewport.ClipToViewport(p1),
+                      Color);
       }
 
       void operator()(const primitive::Triangle &t) {

@@ -72,7 +72,8 @@ public:
               const rectray::ViewportState &viewport, ImDrawList *imDrawList,
               Scene *scene, const rectray::Gui *other) {
     // only ViewportX update
-    camera.Projection.SetAspectRatio(viewport.ViewportWidth, viewport.ViewportHeight);
+    camera.Projection.SetAspectRatio(viewport.ViewportWidth,
+                                     viewport.ViewportHeight);
     camera.Update();
 
     gui.Begin(camera, viewport);
@@ -81,35 +82,32 @@ public:
       auto m = o->Matrix();
       gui.Cube(o.get(), m);
       if (o == scene->Selected) {
-        // gui.Translate(o.get(), rectray::Space::Local, m);
-        auto s = o->Transform.Translation;
-        gui.Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF);
-        gui.Arrow(s, {s.x, s.y + 1, s.z}, 0xFF00FF00);
-        gui.Arrow(s, {s.x, s.y, s.z + 1}, 0xFFFF0000);
+        DirectX::XMFLOAT4X4 matrix;
+        DirectX::XMStoreFloat4x4(&matrix, m);
+        if (gui.Translate(rectray::Space::Local, &matrix)) {
+          o->SetMatrix(DirectX::XMLoadFloat4x4(&matrix));
+        }
       }
     }
 
     auto result = gui.End();
-    if (viewport.MouseLeftDown) {
-      for (auto &o : scene->Objects) {
-        if (o.get() == result.Closest) {
-          scene->Selected = o;
-          break;
+
+    if (!result.Drag) {
+      camera.MouseInputTurntable(viewport);
+      if (viewport.MouseLeftDown) {
+        for (auto &o : scene->Objects) {
+          if (o.get() == result.Closest) {
+            scene->Selected = o;
+            break;
+          }
         }
       }
-    } else {
-      // scene->Selected = nullptr;
-    }
-    if (!result.Updated) {
-      // if no manipulation. camera update
-      camera.MouseInputTurntable(viewport);
     }
 
     if (other) {
       auto &otherCamera = other->m_context.Camera;
-      gui.Frustum(otherCamera.ViewProjection(),
-                        otherCamera.Projection.NearZ,
-                        otherCamera.Projection.FarZ);
+      gui.Frustum(otherCamera.ViewProjection(), otherCamera.Projection.NearZ,
+                  otherCamera.Projection.FarZ);
       if (auto ray = other->m_context.Ray) {
         gui.Ray(*ray, otherCamera.Projection.FarZ);
       }

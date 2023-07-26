@@ -23,12 +23,16 @@ struct Context {
     return 0.1f;
   }
 
-  DirectX::XMFLOAT2 WorldToScreen(const DirectX::XMFLOAT3 &v) {
+  DirectX::XMFLOAT2 WorldToViewport(const DirectX::XMFLOAT3 &v) const {
     DirectX::XMFLOAT4 p;
     DirectX::XMStoreFloat4(
         &p, DirectX::XMVector4Transform(DirectX::XMVectorSet(v.x, v.y, v.z, 1),
                                         Camera.ViewProjection()));
-    return Viewport.ClipToViewpor(p);
+    return Viewport.ClipToViewport(p);
+  }
+
+  DirectX::XMFLOAT2 WorldToViewport(const DirectX::XMFLOAT4X4 &m) const {
+    return WorldToViewport(*((const DirectX::XMFLOAT3*)&m.m[3]));
   }
 
   std::optional<float> Intersects(const DirectX::XMFLOAT3 &s,
@@ -37,8 +41,8 @@ struct Context {
       return {};
     }
     // return LessDistance(s, e, PixelToLength(pixel, s));
-    auto c0 = WorldToScreen(s);
-    auto c1 = WorldToScreen(e);
+    auto c0 = WorldToViewport(s);
+    auto c1 = WorldToViewport(e);
     auto c = Viewport.Intersect(c0, c1, pixel);
     if (!c) {
       return {};

@@ -143,7 +143,7 @@ int main(int, char **) {
             scene.Selected = o;
           }
         }
-        if (ImGui::IsMouseClicked(0) && clicked == 0) {
+        if (ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && clicked == 0) {
           scene.Selected = {};
         }
         ImGui::TreePop();
