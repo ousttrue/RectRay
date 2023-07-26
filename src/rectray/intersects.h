@@ -3,7 +3,7 @@
 
 namespace rectray {
 
-std::optional<float> Intersects(const Ray &ray, const Plain &plain) {
+inline std::optional<float> Intersects(const Ray &ray, const Plain &plain) {
   return -(Dot(plain.Normal, ray.Origin) + plain.D) /
          (Dot(plain.Normal, ray.Direction));
 }
@@ -32,7 +32,7 @@ std::optional<float> Intersects(const Ray &ray, const Plain &plain) {
 //   }
 // }
 
-std::optional<float> Intersects(const Ray &ray, DirectX::XMMATRIX m) {
+inline std::optional<float> Intersects(const Ray &ray, DirectX::XMMATRIX m) {
   // if (!Ray) {
   //   return {};
   // }

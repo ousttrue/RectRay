@@ -25,7 +25,7 @@ struct Result {
 
 class Gui {
   DrawList m_drawlist;
-  std::shared_ptr<IDragHandle> m_drag;
+  IDragHandle *m_drag = nullptr;
 
 public:
   std::list<float> m_hits;
@@ -44,7 +44,7 @@ public:
     if (m_drag) {
       if (m_context.Viewport.MouseLeftDown) {
         // drag
-        result.Drag = m_drag.get();
+        result.Drag = m_drag;
         result.Closest = {};
       } else {
         // drag end
@@ -151,7 +151,7 @@ public:
       // drag
       Arrow(s, {s.x + 1, s.y, s.z}, 0xFF00FFFF,
             [matrix, &drawlist = m_drawlist](const auto &c) {
-              return Translation::LocalX(c, drawlist, *matrix);
+              return Translation::LocalX(drawlist, c, *matrix);
             });
       m_drag->Drag(m_context, matrix);
       return true;
@@ -159,7 +159,7 @@ public:
 
     Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF,
           [matrix, &drawlist = m_drawlist](const auto &c) {
-            return Translation::LocalX(c, drawlist, *matrix);
+            return Translation::LocalX(drawlist, c, *matrix);
           });
     return false;
   }

@@ -15,8 +15,7 @@ struct IDragHandle {
 
 namespace gizmo {
 
-using DragFactory =
-    std::function<std::shared_ptr<IDragHandle>(const Context &conext)>;
+using DragFactory = std::function<IDragHandle *(const Context &conext)>;
 
 struct Rect {
   DirectX::XMFLOAT3 P0;

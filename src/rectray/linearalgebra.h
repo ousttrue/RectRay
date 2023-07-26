@@ -29,6 +29,10 @@ inline DirectX::XMFLOAT2 operator*(const DirectX::XMFLOAT2 &l, float f) {
 inline DirectX::XMFLOAT2 operator/(const DirectX::XMFLOAT2 &l, float f) {
   return l * (1.0f / f);
 }
+inline DirectX::XMFLOAT3 Cross(const DirectX::XMFLOAT3 &l,
+                               const DirectX::XMFLOAT3 &r) {
+  return {l.y * r.z - l.z * r.y, l.z * r.x - l.x * r.z, l.x * r.y - l.y * r.x};
+}
 inline float Dot(const DirectX::XMFLOAT2 &l, const DirectX::XMFLOAT2 &r) {
   return l.x * r.x + l.y * r.y;
 }
