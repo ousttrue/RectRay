@@ -153,13 +153,21 @@ public:
 
     if (m_drag && m_context.Viewport.MouseLeftDown) {
       // drag
-      Arrow(s, {s.x + 1, s.y, s.z}, 0xFF00FFFF);
+      // Arrow(s, {s.x + 1, s.y, s.z}, 0xFF00FFFF);
       m_drag(m_context, matrix, m_drawlist);
       return true;
     } else {
       Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF,
             [&context = m_context, matrix]() {
               return Translation(context, *matrix, Translation::DragType::X);
+            });
+      Arrow(s, {s.x, s.y + 1, s.z}, 0xFF00FF00,
+            [&context = m_context, matrix]() {
+              return Translation(context, *matrix, Translation::DragType::Y);
+            });
+      Arrow(s, {s.x, s.y, s.z + 1}, 0xFFFF0000,
+            [&context = m_context, matrix]() {
+              return Translation(context, *matrix, Translation::DragType::Z);
             });
       return false;
     }
