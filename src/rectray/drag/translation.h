@@ -47,21 +47,22 @@ struct Translation {
                                DragType type) {
     // find new possible way to move
     DirectX::XMFLOAT3 DragPlainNormals[] = {
-        MatrixAxisX(model),     // x
-        MatrixAxisY(model),     // y
-        MatrixAxisZ(model),     // z
-        MatrixAxisX(model),     // yz
-        MatrixAxisY(model),     // zx
-        MatrixAxisZ(model),     // xy
-        -context.Ray->Direction // screen
+        -context.Ray->Direction, // x
+        -context.Ray->Direction, // y
+        -context.Ray->Direction, // z
+        MatrixAxisX(model),      // yz
+        MatrixAxisY(model),      // zx
+        MatrixAxisZ(model),      // xy
+        -context.Ray->Direction  // screen
     };
 
-    auto cameraToModel = Normalized(rectray::MatrixPosition(model) -
-                                    context.Camera.Transform.Translation);
-    for (unsigned int i = 0; i < 3; i++) {
-      auto orthoVector = Cross(DragPlainNormals[i], cameraToModel);
-      DragPlainNormals[i] = Normalized(Cross(DragPlainNormals[i], orthoVector));
-    }
+    // auto cameraToModel = Normalized(rectray::MatrixPosition(model) -
+    //                                 context.Camera.Transform.Translation);
+    // for (unsigned int i = 0; i < 3; i++) {
+    //   auto orthoVector = Cross(DragPlainNormals[i], cameraToModel);
+    //   DragPlainNormals[i] = Normalized(Cross(DragPlainNormals[i],
+    //   orthoVector));
+    // }
     return DragPlainNormals[(int)type];
   }
 
