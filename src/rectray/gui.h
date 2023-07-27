@@ -159,7 +159,7 @@ public:
     } else {
       Arrow(s, {s.x + 1, s.y, s.z}, 0xFF0000FF,
             [&context = m_context, matrix]() {
-              return Translation(context, *matrix);
+              return Translation(context, *matrix, Translation::DragType::X);
             });
       return false;
     }

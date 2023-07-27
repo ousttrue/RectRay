@@ -46,6 +46,9 @@ inline DirectX::XMFLOAT3 operator+(const DirectX::XMFLOAT3 &l,
                                    const DirectX::XMFLOAT3 &r) {
   return DirectX::XMFLOAT3{l.x + r.x, l.y + r.y, l.z + r.z};
 }
+inline DirectX::XMFLOAT3 operator-(const DirectX::XMFLOAT3 &l) {
+  return DirectX::XMFLOAT3{-l.x, -l.y, -l.z};
+}
 inline DirectX::XMFLOAT3 operator-(const DirectX::XMFLOAT3 &l,
                                    const DirectX::XMFLOAT3 &r) {
   return DirectX::XMFLOAT3{l.x - r.x, l.y - r.y, l.z - r.z};
@@ -62,21 +65,21 @@ inline DirectX::XMFLOAT3 Normalized(const DirectX::XMFLOAT3 &v) {
   return {v.x * f, v.y * f, v.z * f};
 }
 
-inline DirectX::XMFLOAT3 MatrixAxisX(const DirectX::XMFLOAT4X4 &m) {
-  auto &t = *((const DirectX::XMFLOAT3 *)&m.m[0]);
+inline DirectX::XMFLOAT3 MatrixRow(const DirectX::XMFLOAT4X4 &m, int index) {
+  auto &t = *((const DirectX::XMFLOAT3 *)&m.m[index]);
   return t;
+}
+inline DirectX::XMFLOAT3 MatrixAxisX(const DirectX::XMFLOAT4X4 &m) {
+  return MatrixRow(m, 0);
 }
 inline DirectX::XMFLOAT3 MatrixAxisY(const DirectX::XMFLOAT4X4 &m) {
-  auto t = *((const DirectX::XMFLOAT3 *)&m.m[1]);
-  return t;
+  return MatrixRow(m, 1);
 }
 inline DirectX::XMFLOAT3 MatrixAxisZ(const DirectX::XMFLOAT4X4 &m) {
-  auto t = *((const DirectX::XMFLOAT3 *)&m.m[2]);
-  return t;
+  return MatrixRow(m, 2);
 }
 inline DirectX::XMFLOAT3 MatrixPosition(const DirectX::XMFLOAT4X4 &m) {
-  auto t = *((const DirectX::XMFLOAT3 *)&m.m[3]);
-  return t;
+  return MatrixRow(m, 3);
 }
 
 struct EuclideanTransform {
