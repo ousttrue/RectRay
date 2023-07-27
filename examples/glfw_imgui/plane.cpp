@@ -87,7 +87,7 @@ float computeDepth(vec3 pos) {
 
 float computeLinearDepth(vec3 pos) {
     vec4 clip_space_pos = fragProj * fragView * vec4(pos.xyz, 1.0);
-    float clip_space_depth = (clip_space_pos.z / clip_space_pos.w);
+    float clip_space_depth = (clip_space_pos.z / clip_space_pos.w) * 2.0 - 1.0; // put back between -1 and 1
     float linearDepth = (2.0 * near * far) / (far + near - clip_space_depth * (far - near)); // get linear value between 0.01 and 100
     return linearDepth / far; // normalize
 }
@@ -99,7 +99,7 @@ void main() {
     gl_FragDepth = computeDepth(fragPos3D);
 
     float linearDepth = computeLinearDepth(fragPos3D);
-    float fading = max(0.0, (0.7 - linearDepth));
+    float fading = max(0.0, (0.5 - linearDepth));
 
     outColor = (grid(fragPos3D, 0.1, true) + grid(fragPos3D, 1.0, true))* float(t > 0.0); // adding multiple resolution for the grid
     outColor.a *= fading;
@@ -141,8 +141,8 @@ struct PlaneImpl {
 
     m_ubo_data.view = camera.ViewMatrix;
     m_ubo_data.proj = camera.ProjectionMatrix;
-    m_ubo_data.pos.x = camera.Projection.NearZ;
-    m_ubo_data.pos.y = camera.Projection.FarZ;
+    m_ubo_data.pos.x = 0.01f;  // camera.Projection.NearZ;
+    m_ubo_data.pos.y = 100.0f; // camera.Projection.FarZ;
 
     m_ubo->Upload(m_ubo_data);
     m_ubo->SetBindingPoint(0);
